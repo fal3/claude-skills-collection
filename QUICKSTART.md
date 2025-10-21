@@ -20,8 +20,9 @@ python3 scripts/load-skill.py copy swiftui-programming-skill
 
 ## 📋 What You Get
 
-**7 Expert Skills for iOS/Swift Development:**
+**8 Expert Skills for iOS/Swift Development:**
 - 🎨 SwiftUI Programming
+- 🏛 Swift Modern Architecture
 - ♿ iOS Accessibility
 - ⚡ Performance Optimization
 - 🌐 Cross-Platform Development
@@ -120,6 +121,7 @@ python3 scripts/load-skill.py search "your topic"
 
 **Keyword Mapping:**
 - UI, SwiftUI, views → `swiftui-programming-skill`
+- Modern, architecture, SwiftData, Observation → `swift-modern-architecture-skill`
 - VoiceOver, accessibility → `ios-accessibility-skill`
 - Slow, performance, optimize → `swift-performance-optimization-skill`
 - iPad, Mac, multi-platform → `cross-platform-app-development-skill`
@@ -154,6 +156,7 @@ skill copy swiftui-programming-skill
       "description": "Select skill",
       "options": [
         "swiftui-programming-skill",
+        "swift-modern-architecture-skill",
         "ios-accessibility-skill",
         "swift-performance-optimization-skill",
         "cross-platform-app-development-skill",

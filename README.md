@@ -7,6 +7,7 @@ This repository contains a collection of Claude Skills tailored for Swift and iO
 | Skill | Description |
 |-------|-------------|
 | [swiftui-programming-skill](swiftui-programming-skill/) | Expertise in SwiftUI for building declarative user interfaces. |
+| [swift-modern-architecture-skill](swift-modern-architecture-skill/) | Enforces Swift 6/iOS 18 architecture with SwiftData, Observation, and async/await. |
 | [ios-accessibility-skill](ios-accessibility-skill/) | Best practices for implementing accessibility features in iOS apps. |
 | [swift-performance-optimization-skill](swift-performance-optimization-skill/) | Techniques for optimizing Swift code performance, memory usage, and rendering. |
 | [cross-platform-app-development-skill](cross-platform-app-development-skill/) | Strategies for developing apps that work across multiple platforms. |
@@ -117,6 +118,7 @@ See [scripts/README.md](scripts/README.md) for full documentation and setup inst
 **Activation Triggers:**
 Each skill activates based on specific keywords or topics:
 - SwiftUI → `swiftui-programming-skill`
+- Modern Swift patterns → `swift-modern-architecture-skill`
 - Accessibility → `ios-accessibility-skill`
 - Performance → `swift-performance-optimization-skill`
 - Memory Issues → `memory-leak-diagnosis-skill`

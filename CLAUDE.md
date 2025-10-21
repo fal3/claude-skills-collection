@@ -14,20 +14,22 @@ The repository follows a consistent pattern:
 <skill-name>/
 ├── SKILL.md              # Skill definition with frontmatter and instructions
 ├── README.md             # User-facing documentation
-└── examples/
-    ├── prompts.md        # Example prompts and responses
-    └── *.swift           # Working code examples
+├── examples/
+│   ├── prompts.md        # Example prompts and responses
+│   └── *.swift           # Working code examples
+└── references/          # Optional deep-dive guides (modern architecture skill)
 ```
 
 ### Available Skills
 
 1. **swiftui-programming-skill** - SwiftUI declarative UI development, SF Symbols, state management
-2. **ios-accessibility-skill** - VoiceOver, Dynamic Type, HIG compliance
-3. **swift-performance-optimization-skill** - Performance profiling, Instruments usage, memory efficiency
-4. **cross-platform-app-development-skill** - Multi-platform app strategies
-5. **swift-unit-testing-skill** - XCTest framework, TDD, mocking patterns
-6. **ios-animation-graphics-skill** - SwiftUI Canvas, Lottie animations
-7. **memory-leak-diagnosis-skill** - ARC, retain cycles, Instruments Leaks tool
+2. **swift-modern-architecture-skill** - Swift 6 architecture, SwiftData persistence, Observation framework, modern concurrency
+3. **ios-accessibility-skill** - VoiceOver, Dynamic Type, HIG compliance
+4. **swift-performance-optimization-skill** - Performance profiling, Instruments usage, memory efficiency
+5. **cross-platform-app-development-skill** - Multi-platform app strategies
+6. **swift-unit-testing-skill** - XCTest framework, TDD, mocking patterns
+7. **ios-animation-graphics-skill** - SwiftUI Canvas, Lottie animations
+8. **memory-leak-diagnosis-skill** - ARC, retain cycles, Instruments Leaks tool
 
 ## Working with Skills
 
