@@ -6,7 +6,7 @@ Get up and running with Claude Skills Collection in 5 minutes!
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/claude-skills-collection.git
+git clone https://github.com/fal3/claude-skills-collection.git
 cd claude-skills-collection
 
 # List available skills
@@ -42,7 +42,7 @@ Each skill includes:
 
 ```bash
 # Clone and you're done!
-git clone https://github.com/yourusername/claude-skills-collection.git
+git clone https://github.com/fal3/claude-skills-collection.git
 cd claude-skills-collection
 
 # Skills activate automatically based on your queries
@@ -211,8 +211,8 @@ python3 scripts/load-skill.py copy swiftui-programming-skill
 
 **Get Support:**
 - 📖 Read [README.md](README.md) for detailed documentation
-- 🐛 [Report bugs](https://github.com/yourusername/claude-skills-collection/issues)
-- 💬 [Ask questions](https://github.com/yourusername/claude-skills-collection/discussions)
+- 🐛 [Report bugs](https://github.com/fal3/claude-skills-collection/issues)
+- 💬 [Ask questions](https://github.com/fal3/claude-skills-collection/discussions)
 - 📧 Contact maintainers
 
 ---
