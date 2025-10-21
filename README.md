@@ -1,8 +1,10 @@
-# Claude Skills Collection: Swift/iOS Development
+# Claude Skills Collection
 
-This repository contains a collection of Claude Skills tailored for Swift and iOS app development. Each skill focuses on a specific area to help developers build high-quality iOS applications.
+This repository contains a curated collection of Claude Skills organized by professional domain. Each skill provides specialized expertise to help developers build high-quality applications across different platforms and technologies.
 
 ## Skills Index
+
+### iOS Development
 
 | Skill | Description |
 |-------|-------------|
@@ -15,6 +17,15 @@ This repository contains a collection of Claude Skills tailored for Swift and iO
 | [ios-animation-graphics-skill](ios-animation-graphics-skill/) | Creating animations and graphics using SwiftUI Canvas and Lottie. |
 | [memory-leak-diagnosis-skill](memory-leak-diagnosis-skill/) | Detecting and fixing memory leaks and retain cycles in Swift apps. |
 
+### Web Development
+*Coming soon* - Skills for React, TypeScript, Next.js, and modern web frameworks
+
+### Backend Development
+*Coming soon* - Skills for API design, database optimization, and server architecture
+
+### Data Science & ML
+*Coming soon* - Skills for data analysis, machine learning, and AI integration
+
 ## Installation & Setup
 
 ### Prerequisites
@@ -26,9 +37,11 @@ This repository contains a collection of Claude Skills tailored for Swift and iO
 
 1. **Clone this repository:**
    ```bash
-   git clone https://github.com/yourusername/claude-skills-collection.git
+   git clone https://github.com/USERNAME/claude-skills-collection.git
    cd claude-skills-collection
    ```
+
+   *Replace USERNAME with the actual repository owner*
 
 2. **Configure Claude Code:**
    - The `CLAUDE.md` file in the repository root provides guidance to Claude Code
@@ -44,10 +57,10 @@ This repository contains a collection of Claude Skills tailored for Swift and iO
 
 #### Option 1: Manual Copy (Recommended for Beginners)
 
-1. **Download or Copy Skill Content:**
-   - Visit the repository at [github.com/yourusername/claude-skills-collection](https://github.com/yourusername/claude-skills-collection)
-   - Download the ZIP or navigate to a skill directory (e.g., `swiftui-programming-skill/`)
-   - Copy the content of `SKILL.md`
+1. **Browse and Copy Skill Content:**
+   - Visit the repository on GitHub
+   - Navigate to a skill directory (e.g., `swiftui-programming-skill/`)
+   - Open the `SKILL.md` file and copy its entire content
 
 2. **Paste into Claude:**
    - Open a new Claude conversation at [claude.ai](https://claude.ai)
@@ -85,7 +98,7 @@ See [scripts/README.md](scripts/README.md) for full documentation and setup inst
 
 **Git Issues?**
 - Verify Git installation: `git --version`
-- Alternative: Download the ZIP manually from the GitHub repository page
+- Alternative: Browse files directly on GitHub and copy skill content
 - For Windows users: Use Git Bash or Windows Terminal
 
 **File Path Issues?**
@@ -97,7 +110,7 @@ See [scripts/README.md](scripts/README.md) for full documentation and setup inst
 - These skills are tested and validated as of October 2025
 - All code uses modern Swift 5.9+ features and iOS 17+ APIs
 - Check [Anthropic's documentation](https://docs.anthropic.com) for Claude updates
-- Report issues via [GitHub Issues](https://github.com/yourusername/claude-skills-collection/issues)
+- Report issues via GitHub Issues in this repository
 
 ## Usage Guidelines
 
@@ -163,7 +176,7 @@ Each skill activates based on specific keywords or topics:
 We welcome contributions to improve and expand the Claude Skills Collection! Here's how you can help:
 
 ### Report Issues
-- Found a bug or error in the code examples? [Open an issue](https://github.com/yourusername/claude-skills-collection/issues)
+- Found a bug or error in the code examples? Open an issue in this repository
 - Skill not activating as expected? Let us know!
 - Have suggestions for new skills? We'd love to hear them!
 
@@ -197,20 +210,38 @@ We welcome contributions to improve and expand the Claude Skills Collection! Her
 - **Star the repo**: Show your support and help others discover these skills
 
 ### Roadmap & Future Skills
-We're planning to add skills for:
+
+**iOS Development:**
 - Core Data and SwiftData
-- Combine and async/await patterns
 - iOS Widget development
 - App Clips and extensions
 - ARKit and RealityKit
 - CloudKit integration
+
+**Web Development:**
+- React/Next.js component patterns
+- TypeScript best practices
+- Web accessibility (WCAG)
+- Performance optimization
+
+**Backend Development:**
+- RESTful API design
+- Database schema optimization
+- Microservices architecture
+- Authentication & authorization
+
+**Data Science & ML:**
+- Data preprocessing and cleaning
+- Model training and evaluation
+- Python/pandas workflows
+- ML deployment patterns
 
 Want to contribute one of these? Start a discussion or submit a PR!
 
 ---
 
 **Last Updated:** October 2025
-**Validated for:** Swift 5.9+, iOS 17+, Xcode 15+
+**Current Focus:** iOS Development (Swift 5.9+, iOS 17+, Xcode 15+)
 **License:** MIT (see LICENSE file)
 
-Made with ❤️ for the iOS development community
+Made with ❤️ for the developer community
