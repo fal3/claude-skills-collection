@@ -1,0 +1,28 @@
+{
+  "name": "ios-swift-skills",
+  "displayName": "iOS & Swift Skills Collection",
+  "version": "1.0.0",
+  "description": "Comprehensive collection of iOS development skills including SwiftUI, modern Swift architecture, accessibility, performance optimization, and more.",
+  "author": {
+    "name": "fal3",
+    "url": "https://github.com/fal3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fal3/claude-skills-collection"
+  },
+  "keywords": [
+    "ios",
+    "swift",
+    "swiftui",
+    "accessibility",
+    "performance",
+    "testing",
+    "architecture",
+    "mobile"
+  ],
+  "license": "MIT",
+  "engines": {
+    "claude-code": ">=1.0.0"
+  }
+}

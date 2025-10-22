@@ -1,0 +1,11 @@
+{
+  "name": "ios-swift-marketplace",
+  "displayName": "iOS & Swift Skills Marketplace",
+  "description": "Official marketplace for iOS and Swift development skills",
+  "plugins": [
+    {
+      "name": "ios-swift-skills",
+      "path": "."
+    }
+  ]
+}
