@@ -139,14 +139,14 @@ This repository is a Claude Code plugin with the following structure:
 ```
 claude-skills-collection/
 ├── .claude-plugin/
-│   └── plugin.json          # Plugin metadata
+│   ├── plugin.json          # Plugin metadata
+│   └── marketplace.json     # Marketplace config
 ├── skills/                   # All skills here
 │   ├── swiftui-programming-skill/
 │   │   ├── SKILL.md         # Skill definition
 │   │   ├── README.md        # Documentation
 │   │   └── examples/        # Code examples
 │   └── ...
-├── marketplace.json         # Marketplace config
 └── CLAUDE.md               # Repository guidelines
 ```
 
