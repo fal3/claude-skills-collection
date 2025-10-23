@@ -6,7 +6,7 @@
   "plugins": [
     {
       "name": "ios-swift-skills",
-      "source": ".",
+      "source": "./",
       "description": "Comprehensive collection of iOS development skills including SwiftUI, modern Swift architecture, accessibility, performance optimization, and more"
     }
   ]
