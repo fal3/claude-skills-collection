@@ -1,170 +1,79 @@
 # Claude Skills Collection
 
-This repository contains a curated collection of Claude Skills organized by professional domain. Each skill provides specialized expertise to help developers build high-quality applications across different platforms and technologies.
-
-## TL;DR - Get Started in 10 Seconds
-
-### Claude Code Plugin (Recommended)
-```bash
-# In Claude Code, run:
-/plugin marketplace add https://github.com/fal3/claude-skills-collection
-/plugin install ios-swift-skills
-```
-
-That's it! All 8 iOS/Swift skills are now available automatically.
-
----
+A curated collection of Claude Code skills for Swift and iOS development. Each skill provides specialized expertise to help developers build high-quality applications.
 
 ## Installation
 
-### 🔌 Claude Code Plugin (Recommended)
-
-**Install the plugin:**
-```bash
-# Add the marketplace
-/plugin marketplace add https://github.com/fal3/claude-skills-collection
-
-# Install the plugin
-/plugin install ios-swift-skills
-```
-
-**Benefits:**
-- ✅ All skills auto-loaded when relevant
-- ✅ No manual copying or pasting
-- ✅ Updates automatically when you pull changes
-- ✅ Works across all your projects
-
-### 🎯 Alternative: Project-Specific Installation
-
-Clone this repo into your project and Claude Code will auto-detect the skills:
+### Option 1: Clone into your project (Recommended)
 
 ```bash
 cd your-project/
 git clone https://github.com/fal3/claude-skills-collection.git
 ```
 
-Then reference in your project's `CLAUDE.md`:
+Then add this line to your project's `CLAUDE.md`:
+
 ```markdown
 Load skills from: ./claude-skills-collection/
 ```
 
-## Skills Index
+### Option 2: Copy individual skills
 
-All skills are automatically available once you install the plugin. No manual loading required!
+Copy the skill folders you need into your project's `skills/` directory:
 
-### iOS Development (8 Skills)
+```bash
+cp -r claude-skills-collection/skills/swiftui-programming-skill ./skills/
+```
 
-| Skill | Description | Activation Keywords |
-|-------|-------------|---------------------|
-| **swiftui-programming-skill** | SwiftUI declarative UI development | SwiftUI, declarative UI, SF Symbols |
-| **swift-modern-architecture-skill** | Swift 6/iOS 18 architecture patterns | Swift 6, iOS 18, SwiftData, modern architecture |
-| **ios-accessibility-skill** | iOS accessibility best practices | VoiceOver, Dynamic Type, accessibility |
-| **swift-performance-optimization-skill** | Performance optimization techniques | performance, Instruments, optimization |
-| **cross-platform-app-development-skill** | Multi-platform app strategies | multi-platform, iPad, Mac Catalyst |
-| **swift-unit-testing-skill** | XCTest and unit testing patterns | XCTest, unit testing, TDD |
-| **ios-animation-graphics-skill** | SwiftUI animations and graphics | animations, Canvas, Lottie |
-| **memory-leak-diagnosis-skill** | Memory leak detection and fixing | memory leaks, retain cycles, ARC |
+Then reference in your `CLAUDE.md`:
 
-Each skill includes:
-- 6 key best practices
-- Domain-specific guidelines
-- 3-5 complete code examples
-- Working Swift code snippets
+```markdown
+Load skills from: ./skills/
+```
 
-### Web Development
-*Coming soon* - Skills for React, TypeScript, Next.js, and modern web frameworks
+## Available Skills
 
-### Backend Development
-*Coming soon* - Skills for API design, database optimization, and server architecture
+### iOS / Swift Development
 
-### Data Science & ML
-*Coming soon* - Skills for data analysis, machine learning, and AI integration
+| Skill | Description |
+|-------|-------------|
+| **swiftui-programming-skill** | SwiftUI declarative UI development, SF Symbols, state management |
+| **swift-modern-architecture-skill** | Swift 6/iOS 18 architecture, SwiftData, Observation framework |
+| **ios-accessibility-skill** | VoiceOver, Dynamic Type, HIG compliance |
+| **swift-performance-optimization-skill** | Performance profiling, Instruments, memory efficiency |
+| **cross-platform-app-development-skill** | Multi-platform app strategies across Apple ecosystem |
+| **swift-unit-testing-skill** | XCTest, TDD, mocking patterns |
+| **ios-animation-graphics-skill** | SwiftUI Canvas, animations, Lottie integration |
+| **memory-leak-diagnosis-skill** | ARC, retain cycles, Instruments Leaks tool |
+| **swift-SpeechAnalyzer-Framework-Expert** | Apple Speech framework (macOS 26+/iOS 26+) |
 
----
+### AI / Multi-Model
+
+| Skill | Description |
+|-------|-------------|
+| **multi-llm-orchestrator** | Orchestrate Claude Code, Gemini CLI, Codex, and Grok together |
+| **gemini-cli-helper** | Delegate large codebase analysis to Gemini CLI |
 
 ## How It Works
 
-Once installed, skills activate automatically based on your queries:
+Skills activate automatically based on your queries. Ask about SwiftUI and the SwiftUI skill provides expertise. Mention memory leaks and the diagnosis skill engages. No manual loading required.
 
-- Ask about **SwiftUI** → `swiftui-programming-skill` loads
-- Mention **memory leaks** → `memory-leak-diagnosis-skill` activates
-- Discuss **accessibility** → `ios-accessibility-skill` engages
-- Talk about **testing** → `swift-unit-testing-skill` helps
-
-No manual loading required. Just ask your question and the relevant skills provide expertise.
-
-### Example Usage
-
-```
-You: "How do I add VoiceOver labels to my SwiftUI view?"
-Claude: [ios-accessibility-skill activates] Here's how to implement VoiceOver...
-
-You: "My app is using too much memory"
-Claude: [memory-leak-diagnosis-skill activates] Let's diagnose potential memory leaks...
-
-You: "I need to create a smooth animation"
-Claude: [ios-animation-graphics-skill activates] I'll show you SwiftUI animation techniques...
-```
-
-Each skill provides:
+Each skill includes:
 - Best practices specific to the domain
-- Complete, tested code examples
-- Modern Swift/iOS patterns (Swift 6, iOS 18+)
-- Apple HIG compliance
+- Complete, working Swift code examples
+- Modern patterns (Swift 6, iOS 18+)
 
 ## Contributing
 
-We welcome contributions! To add or improve skills:
-
 1. Fork this repository
 2. Add your skill in `skills/your-skill-name/SKILL.md`
-3. Follow the skill structure defined in `CLAUDE.md`:
-   - YAML frontmatter with name, description, version, activation
-   - 6 best practices
-   - Domain-specific guidelines
-   - 3-5 complete code examples
-4. Test with Claude Code: `/plugin marketplace add ./your-fork`
-5. Submit a pull request
+3. Follow the skill structure: YAML frontmatter (`name`, `description`), best practices, guidelines, and code examples
+4. Submit a pull request
 
-### Guidelines
-- Follow Apple's Swift API Design Guidelines
-- Use modern Swift (5.9+) and iOS (17+) features
-- Include working, tested code examples
-- See [CONTRIBUTING.md](CONTRIBUTING.md) for details
-
-### Plugin Structure
-
-This repository is a Claude Code plugin with the following structure:
-
-```
-claude-skills-collection/
-├── .claude-plugin/
-│   ├── plugin.json          # Plugin metadata
-│   └── marketplace.json     # Marketplace config
-├── skills/                   # All skills here
-│   ├── swiftui-programming-skill/
-│   │   ├── SKILL.md         # Skill definition
-│   │   ├── README.md        # Documentation
-│   │   └── examples/        # Code examples
-│   └── ...
-└── CLAUDE.md               # Repository guidelines
-```
-
-### Roadmap
-
-**Upcoming Skills:**
-- Core Data and SwiftData patterns
-- iOS Widget development
-- ARKit and RealityKit
-- CloudKit integration
-- Web Development (React, TypeScript, Next.js)
-- Backend Development (API design, databases)
-- Data Science & ML (Python, pandas, model training)
-
-Want to contribute? Open an issue or submit a PR!
+See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ---
 
-**Current Focus:** iOS Development (Swift 5.9+, iOS 17+, Xcode 15+)
-**License:** MIT
+**Current Focus:** iOS Development (Swift 6, iOS 18+, Xcode 16+)  
+**License:** MIT  
 **Maintained by:** [@fal3](https://github.com/fal3)

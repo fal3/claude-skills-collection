@@ -1,8 +1,6 @@
 ---
 name: SpeechAnalyzer Framework Expert
-description: Expert guide for Apple's modern Speech framework (macOS 26+, iOS 26+) featuring SpeechAnalyzer and SpeechTranscriber for on-device speech-to-text transcription.
-version: 1.0
-activation: Activate for queries on Speech framework, SpeechAnalyzer, SpeechTranscriber, on-device speech recognition, audio transcription, or migrating from WhisperKit/SFSpeechRecognizer.
+description: Expert guide for Apple's modern Speech framework (macOS 26+, iOS 26+) featuring SpeechAnalyzer and SpeechTranscriber for on-device speech-to-text transcription. Use for queries on Speech framework, SpeechAnalyzer, SpeechTranscriber, on-device speech recognition, audio transcription, or migrating from WhisperKit/SFSpeechRecognizer.
 ---
 
 # SpeechAnalyzer Framework Expert

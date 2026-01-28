@@ -1,8 +1,6 @@
 ---
 name: iOS Animation Graphics Skill
-description: Creating animations and graphics using SwiftUI Canvas, Core Animation, and Lottie integration for engaging iOS app experiences.
-version: 1.0
-activation: Activate for queries on iOS animations, SwiftUI Canvas usage, Lottie integration, Core Animation, or custom graphics creation.
+description: Creating animations and graphics using SwiftUI Canvas, Core Animation, and Lottie integration for engaging iOS app experiences. Use for queries on iOS animations, SwiftUI Canvas usage, Lottie integration, Core Animation, or custom graphics creation.
 ---
 
 # iOS Animation Graphics Skill

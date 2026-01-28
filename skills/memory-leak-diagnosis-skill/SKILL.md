@@ -1,8 +1,6 @@
 ---
 name: Memory Leak Diagnosis Skill
-description: Detecting and fixing memory leaks and retain cycles in Swift apps using Instruments and best practices.
-version: 1.0
-activation: Activate for queries on memory leaks, retain cycles, Instruments leaks detection, ARC issues, or memory management problems.
+description: Detecting and fixing memory leaks and retain cycles in Swift apps using Instruments and best practices. Use for queries on memory leaks, retain cycles, Instruments leaks detection, ARC issues, or memory management problems.
 ---
 
 # Memory Leak Diagnosis Skill

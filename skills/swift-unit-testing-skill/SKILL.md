@@ -1,8 +1,6 @@
 ---
 name: Swift Unit Testing Skill
-description: Guidelines and templates for writing effective unit tests with XCTest, including test-driven development practices and mocking techniques.
-version: 1.0
-activation: Activate for queries on Swift unit testing, XCTest framework, test-driven development, mocking, or testing best practices.
+description: Guidelines and templates for writing effective unit tests with XCTest, including test-driven development practices and mocking techniques. Use for queries on Swift unit testing, XCTest framework, test-driven development, mocking, or testing best practices.
 ---
 
 # Swift Unit Testing Skill

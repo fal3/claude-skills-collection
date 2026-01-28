@@ -1,8 +1,6 @@
 ---
 name: Cross-Platform App Development Skill
-description: Strategies for developing apps that work across multiple Apple platforms, including adaptive layouts and multi-view implementations.
-version: 1.0
-activation: Activate for queries on cross-platform development, multi-platform apps, adaptive layouts, or device-specific adaptations.
+description: Strategies for developing apps that work across multiple Apple platforms, including adaptive layouts and multi-view implementations. Use for queries on cross-platform development, multi-platform apps, adaptive layouts, or device-specific adaptations.
 ---
 
 # Cross-Platform App Development Skill

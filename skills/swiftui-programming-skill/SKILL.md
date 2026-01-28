@@ -1,8 +1,6 @@
 ---
 name: SwiftUI Programming Skill
-description: Expertise in SwiftUI for building declarative user interfaces, including SF Symbols integration and best practices.
-version: 1.0
-activation: Activate for queries on SwiftUI development, declarative UI building, SF Symbols usage, or SwiftUI component creation.
+description: Expertise in SwiftUI for building declarative user interfaces, including SF Symbols integration and best practices. Use for queries on SwiftUI development, declarative UI building, SF Symbols usage, or SwiftUI component creation.
 ---
 
 # SwiftUI Programming Skill
@@ -13,7 +11,7 @@ This skill provides comprehensive guidance on developing user interfaces using S
 
 1. **Declarative Syntax**: Use SwiftUI's declarative approach to describe what the UI should look like, not how to build it.
 
-2. **State Management**: Leverage `@State`, `@ObservedObject`, `@EnvironmentObject` for managing view state.
+2. **State Management**: Leverage `@State`, `@Observable`, `@Environment` for managing view state. Prefer the Observation framework (`@Observable`) over the older `ObservableObject`/`@Published` pattern.
 
 3. **Composition**: Build complex views by composing simpler views.
 
@@ -43,7 +41,7 @@ import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Text("Hello, World!")
                 .navigationTitle("My App")
                 .toolbar {
@@ -144,7 +142,7 @@ struct ListView: View {
     let items = [Item(name: "Item 1"), Item(name: "Item 2"), Item(name: "Item 3")]
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             List(items) { item in
                 NavigationLink(destination: DetailView(item: item)) {
                     Text(item.name)
@@ -179,7 +177,7 @@ struct FormView: View {
     @State private var isValid = false
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Form {
                 Section(header: Text("Personal Information")) {
                     TextField("Name", text: $name)
@@ -196,8 +194,8 @@ struct FormView: View {
                 }
             }
             .navigationTitle("User Form")
-            .onChange(of: name) { _ in validateForm() }
-            .onChange(of: email) { _ in validateForm() }
+            .onChange(of: name) { oldValue, newValue in validateForm() }
+            .onChange(of: email) { oldValue, newValue in validateForm() }
         }
     }
     

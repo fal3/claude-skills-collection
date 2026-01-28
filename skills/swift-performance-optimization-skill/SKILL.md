@@ -1,8 +1,6 @@
 ---
 name: Swift Performance Optimization Skill
-description: Techniques for optimizing Swift code performance, memory usage, rendering efficiency, and using Instruments for profiling.
-version: 1.0
-activation: Activate for queries on Swift performance optimization, memory management, rendering improvements, Instruments usage, or profiling Swift/iOS apps.
+description: Techniques for optimizing Swift code performance, memory usage, rendering efficiency, and using Instruments for profiling. Use for queries on Swift performance optimization, memory management, rendering improvements, Instruments usage, or profiling Swift/iOS apps.
 ---
 
 # Swift Performance Optimization Skill

@@ -1,8 +1,6 @@
 ---
 name: iOS Accessibility Skill
-description: Best practices for implementing accessibility features in iOS apps, including VoiceOver support, Dynamic Type, and Human Interface Guidelines compliance.
-version: 1.0
-activation: Activate for queries on iOS accessibility, VoiceOver implementation, Dynamic Type, or making apps accessible to users with disabilities.
+description: Best practices for implementing accessibility features in iOS apps, including VoiceOver support, Dynamic Type, and Human Interface Guidelines compliance. Use for queries on iOS accessibility, VoiceOver implementation, Dynamic Type, or making apps accessible to users with disabilities.
 ---
 
 # iOS Accessibility Skill
