@@ -1,7 +1,7 @@
 {
   "name": "ios-swift-skills",
-  "version": "1.0.0",
-  "description": "Comprehensive collection of iOS development skills including SwiftUI, modern Swift architecture, accessibility, performance optimization, and more.",
+  "version": "1.1.0",
+  "description": "Twelve focused skills for modern Swift and Apple platform development.",
   "author": {
     "name": "fal3",
     "url": "https://github.com/fal3"
@@ -15,7 +15,12 @@
     "performance",
     "testing",
     "architecture",
-    "mobile"
+    "mobile",
+    "concurrency",
+    "swiftdata",
+    "app-intents",
+    "widgets",
+    "speech"
   ],
   "license": "MIT"
 }

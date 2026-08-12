@@ -1,0 +1,4 @@
+interface:
+  display_name: "Swift Modern Architecture"
+  short_description: "Design modern Swift app architecture safely"
+  default_prompt: "Use $swift-modern-architecture-skill to review and improve this app architecture."

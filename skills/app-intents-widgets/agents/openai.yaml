@@ -1,0 +1,4 @@
+interface:
+  display_name: "App Intents & Widgets"
+  short_description: "Build reliable system-facing app actions"
+  default_prompt: "Use $app-intents-widgets to design and verify these App Intents and WidgetKit integrations."

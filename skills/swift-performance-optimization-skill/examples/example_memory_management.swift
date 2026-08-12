@@ -1,39 +1,32 @@
-class NetworkManager {
-    var completionHandler: (() -> Void)?
-    
-    func fetchData() {
-        // BAD: Strong reference cycle
-        // self.completionHandler = {
-        //     self.processData()
-        // }
-        
-        // GOOD: Weak self to avoid retain cycle
-        self.completionHandler = { [weak self] in
-            self?.processData()
-        }
-        
-        // Simulate network call
-        DispatchQueue.global().asyncAfter(deadline: .now() + 1) {
-            self.completionHandler?()
-        }
-    }
-    
-    func processData() {
-        print("Data processed")
-    }
-}
+import Foundation
 
-// Alternative with unowned for non-optional self
-class ViewController {
-    var timer: Timer?
-    
-    func startTimer() {
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [unowned self] timer in
-            self.updateUI()
+@MainActor
+final class PollingModel {
+    private var task: Task<Void, Never>?
+    private(set) var tickCount = 0
+
+    func start() {
+        stop()
+        task = Task { [weak self] in
+            while !Task.isCancelled {
+                do {
+                    try await Task.sleep(for: .seconds(1))
+                } catch {
+                    return
+                }
+
+                guard let self else { return }
+                tickCount += 1
+            }
         }
     }
-    
-    func updateUI() {
-        // Update UI
+
+    func stop() {
+        task?.cancel()
+        task = nil
+    }
+
+    deinit {
+        task?.cancel()
     }
 }

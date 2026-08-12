@@ -1,300 +1,136 @@
 ---
 name: Swift Performance Optimization Skill
-description: Techniques for optimizing Swift code performance, memory usage, rendering efficiency, and using Instruments for profiling.
-version: 1.0
-activation: Activate for queries on Swift performance optimization, memory management, rendering improvements, Instruments usage, or profiling Swift/iOS apps.
+description: Use when investigating measured Swift or Apple-platform regressions in CPU, memory, launch, scrolling, animation hitches, image processing, energy, networking, or concurrency, or when designing performance tests and Instruments experiments. Do not use for speculative micro-optimization, ordinary refactoring, or a functional bug without performance evidence.
 ---
 
 # Swift Performance Optimization Skill
 
-This skill provides expertise in optimizing Swift code for better performance, memory efficiency, and smooth rendering. It covers profiling with Instruments, memory management best practices, and performance patterns specific to iOS development.
+Optimize from evidence. Preserve behavior, accessibility, data correctness, and lifecycle safety while changing performance characteristics.
 
-## Best Practices
+## Baseline
 
-1. **Profile First**: Always use Instruments to identify bottlenecks before optimizing.
+The copy-ready examples use Xcode 16, Swift 6 language mode with strict concurrency, and iOS 17. Most principles apply to older targets; verify each API against the app's actual minimum. Material from the OS 27 development cycle is beta relative to stable Xcode 26.6 and requires an explicit request, beta labeling, stable fallback, and availability gate.
 
-2. **Memory Management**: Understand ARC, avoid retain cycles, and manage memory efficiently.
+## Measurement workflow
 
-3. **Lazy Loading**: Defer expensive operations and use lazy properties when appropriate.
+1. Define a user-visible symptom and a reproducible scenario.
+2. Record device, OS, build configuration, dataset, thermal state, and network conditions.
+3. Measure an optimized Release build on representative hardware. Simulator-only timing is not release evidence.
+4. Select the instrument that answers the hypothesis.
+5. Save a baseline trace or metric, change one variable, then repeat the same scenario.
+6. Confirm that the bottleneck moved and no memory, energy, correctness, or accessibility regression appeared.
+7. Add a regression threshold where the workload is stable enough to automate.
 
-4. **Efficient Collections**: Choose the right data structures and operations for performance.
+Useful tools include:
 
-5. **UI Performance**: Optimize rendering with techniques like cell reuse and background processing.
+| Symptom | First evidence source |
+|---|---|
+| CPU-bound work | Time Profiler; inspect heavy stacks and self time |
+| SwiftUI update cost | SwiftUI instrument plus Time Profiler |
+| Scroll or animation stalls | Animation Hitches, Core Animation, signposts |
+| Growth or leaks | Allocations, Leaks, Memory Graph, memgraphs |
+| Slow launch | App Launch template and launch signposts |
+| Battery or thermal issues | Energy Log and device testing |
+| Field regressions | MetricKit payloads and app-specific telemetry |
 
-6. **Concurrency**: Use GCD or Swift Concurrency for background tasks without blocking the main thread.
+Use `os_signpost` or signposter intervals around important operations so traces answer product questions rather than only showing raw symbols.
 
-## Performance Guidelines
+## Lifetime and memory safety
 
-- Minimize work on the main thread, especially UI updates.
-- Use Instruments Time Profiler to find CPU hotspots.
-- Monitor memory usage with Allocations and Leaks instruments.
-- Optimize images and assets for size and loading.
-- Cache expensive computations when possible.
-- Avoid unnecessary view updates in SwiftUI with proper state management.
+- A capture is a cycle only when the closure is retained along a path back to its owner. Do not add `[weak self]` mechanically to every closure.
+- Use `weak` when the owner may legitimately disappear before the callback. Use `unowned` only when the lifetime invariant is proven and documented; a wrong assumption traps.
+- Prefer structured `async` functions over storing completion closures.
+- Cancel owned tasks and invalidate repeating timers when the owner stops needing them and during teardown.
+- Never use `[unowned self]` in a repeating timer merely to silence a cycle.
 
-## Examples
-
-### Example 1: Optimizing SwiftUI List Performance
-
-**User Prompt:** "How can I optimize a SwiftUI List with many items that's scrolling slowly?"
-
-**Expected Output:**
 ```swift
-import SwiftUI
+import Foundation
 
-struct OptimizedListView: View {
-    let items = Array(1...10000) // Large dataset
-    
-    var body: some View {
-        List(items, id: \.self) { item in
-            OptimizedRowView(item: item)
-        }
-        .listStyle(.plain)
-    }
-}
+@MainActor
+final class PollingModel {
+    private var task: Task<Void, Never>?
+    private(set) var tickCount = 0
 
-struct OptimizedRowView: View {
-    let item: Int
-    
-    var body: some View {
-        HStack {
-            Text("Item \(item)")
-            Spacer()
-            Image(systemName: "star")
-                .foregroundColor(.yellow)
-        }
-        .padding(.vertical, 8)
-        // Avoid complex computations in body
-        // Use @StateObject for view models if needed
-    }
-}
-
-// For even better performance with large datasets:
-struct LazyOptimizedListView: View {
-    let items = Array(1...10000)
-    
-    var body: some View {
-        ScrollView {
-            LazyVStack {
-                ForEach(items, id: \.self) { item in
-                    OptimizedRowView(item: item)
+    func start() {
+        stop()
+        task = Task { [weak self] in
+            while !Task.isCancelled {
+                do {
+                    try await Task.sleep(for: .seconds(1))
+                } catch {
+                    return
                 }
+                guard let self else { return }
+                tickCount += 1
             }
         }
     }
-}
-```
 
-### Example 2: Memory Management with Weak References
-
-**User Prompt:** "Fix a potential memory leak in a closure capturing self."
-
-**Expected Output:**
-```swift
-class NetworkManager {
-    var completionHandler: (() -> Void)?
-    
-    func fetchData() {
-        // BAD: Strong reference cycle
-        // self.completionHandler = {
-        //     self.processData()
-        // }
-        
-        // GOOD: Weak self to avoid retain cycle
-        self.completionHandler = { [weak self] in
-            self?.processData()
-        }
-        
-        // Simulate network call
-        DispatchQueue.global().asyncAfter(deadline: .now() + 1) {
-            self.completionHandler?()
-        }
+    func stop() {
+        task?.cancel()
+        task = nil
     }
-    
-    func processData() {
-        print("Data processed")
-    }
-}
 
-// Alternative with unowned for non-optional self
-class ViewController {
-    var timer: Timer?
-    
-    func startTimer() {
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [unowned self] timer in
-            self.updateUI()
-        }
-    }
-    
-    func updateUI() {
-        // Update UI
+    deinit {
+        task?.cancel()
     }
 }
 ```
 
-### Example 3: Instruments Time Profiler Usage
+If a Foundation `Timer` is required, capture its owner weakly, store the timer, invalidate the old instance before starting another, and invalidate it on stop/deinit.
 
-**User Prompt:** "How do I use Instruments to profile CPU performance in my Swift app?"
+See [the lifecycle-safe example](examples/example_memory_management.swift).
 
-**Expected Output:**
-To profile CPU performance:
+## Concurrency
 
-1. Open Xcode and select Product > Profile (⌘I)
-2. Choose "Time Profiler" from the Instruments template
-3. Click the record button to start profiling
-4. Perform the actions you want to profile in your app
-5. Stop recording and examine the call tree
-6. Look for methods with high "Self" time (time spent in that method itself)
-7. Expand the heaviest stack trace to identify bottlenecks
+- Swift concurrency is the default for new asynchronous flows, but Dispatch and operation queues remain supported interoperability and scheduling tools.
+- Keep UI state on `@MainActor`. Move only verified expensive, concurrency-safe work away from it.
+- Avoid spawning an unbounded task per item. Use task groups with deliberate limits, an actor, an async sequence, or a bounded worker design.
+- Check cancellation before expensive phases and before publishing results.
+- Do not trade actor safety for speed without race-focused tests and trace evidence.
 
-Key Time Profiler tips:
-- Focus on "Self" column for time spent in each method
-- Use "Invert Call Tree" to see bottom-up view
-- Separate by thread to identify main thread blocking
-- Look for recursive calls or unexpected frequent calls
+## Collections and computation
 
-Example findings:
-- If `viewDidLoad()` takes 500ms, check for expensive operations
-- Heavy `tableView(_:cellForRowAt:)` calls indicate list optimization needed
-- Frequent `layoutSubviews()` suggests layout inefficiencies
+- Pick structures by operation: a `Set` or dictionary can replace repeated linear membership searches.
+- Avoid accidental copy-on-write churn in hot paths, but prove it with Allocations or profiling.
+- Reserve capacity only when the final scale is reasonably known.
+- Cache only expensive, repeatable results with a clear invalidation rule and a bounded memory policy.
+- Benchmark optimized code with representative data; debug-build microbenchmarks are misleading.
 
-### Example 4: Efficient Image Loading
+## SwiftUI
 
-**User Prompt:** "Optimize image loading and display in a collection view."
+- Stable identity is mandatory for mutable collections. Prefer model IDs, not offsets or a new UUID computed during rendering.
+- `List` already realizes rows lazily. `ScrollView` plus `LazyVStack` offers different styling and interaction behavior; it is not inherently faster.
+- A `body` evaluation is value computation, not proof that all descendants were redrawn. Use the SwiftUI instrument to identify expensive updates.
+- Keep work out of `body`: precompute formatting, filtering, decoding, and image processing at the correct layer.
+- Extract views for responsibility and data-flow clarity. Do not claim extraction alone establishes an isolated rendering boundary.
+- Use `.equatable()`/`EquatableView` only after measurement, and include every visible input in equality.
+- Prefer `.task(id:)` for work tied to a view and input. It cancels prior work when the ID changes.
 
-**Expected Output:**
-```swift
-import UIKit
+See [the list identity example](examples/example_list_optimization.swift).
 
-class ImageCollectionViewCell: UICollectionViewCell {
-    let imageView = UIImageView()
-    private var imageLoadTask: URLSessionDataTask?
-    
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-        setupViews()
-    }
-    
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-    
-    private func setupViews() {
-        imageView.contentMode = .scaleAspectFill
-        imageView.clipsToBounds = true
-        contentView.addSubview(imageView)
-        imageView.frame = contentView.bounds
-    }
-    
-    func configure(with imageURL: URL) {
-        // Cancel previous task
-        imageLoadTask?.cancel()
-        
-        // Placeholder
-        imageView.image = UIImage(named: "placeholder")
-        
-        // Load image asynchronously
-        imageLoadTask = URLSession.shared.dataTask(with: imageURL) { [weak self] data, _, _ in
-            guard let data = data, let image = UIImage(data: data) else { return }
-            
-            DispatchQueue.main.async {
-                self?.imageView.image = image
-            }
-        }
-        imageLoadTask?.resume()
-    }
-    
-    override func prepareForReuse() {
-        super.prepareForReuse()
-        imageLoadTask?.cancel()
-        imageView.image = nil
-    }
-}
+## Images and reusable cells
 
-// Usage in ViewController
-class ImageGalleryViewController: UIViewController, UICollectionViewDataSource {
-    let collectionView = UICollectionView(frame: .zero, collectionViewLayout: UICollectionViewFlowLayout())
-    let imageURLs: [URL] = [] // Your image URLs
-    
-    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ImageCell", for: indexPath) as! ImageCollectionViewCell
-        cell.configure(with: imageURLs[indexPath.item])
-        return cell
-    }
-}
-```
+- Decode and downsample to the rendered pixel size rather than decoding full-resolution assets for thumbnails.
+- Validate HTTP responses, cancel obsolete requests, and check both cancellation and represented URL before assigning an image.
+- Reset image, identity, and task in `prepareForReuse()`.
+- Lay out with constraints or `layoutSubviews`; a one-time frame set during initialization will not follow cell resizing.
+- Use a bounded cache whose cost reflects decoded pixels. Add collection-view prefetching only after measuring its value and cancel prefetches when appropriate.
+- Register cell classes/nibs, implement item counts, and avoid force-casting dequeued cells in copy-ready examples.
 
-### Example 5: SwiftUI Rendering Optimization
+See [the complete downsampling and reuse example](examples/example_image_loading.swift).
 
-**User Prompt:** "Optimize SwiftUI view updates to prevent unnecessary re-renders."
+## Shipping checks
 
-**Expected Output:**
-```swift
-import SwiftUI
+- Compare percentile metrics, not only averages.
+- Set thresholds that account for device classes and natural variance.
+- Keep before/after traces with the scenario and build identifier.
+- Re-test memory warnings, background/foreground transitions, cancellation, large accessibility text, and low-power/thermal conditions.
+- State what was not measured; never market an optimization as proven from code inspection alone.
 
-// BAD: Causes re-render on every change
-struct BadCounterView: View {
-    @State private var count = 0
-    @State private var name = "Counter"
-    
-    var body: some View {
-        VStack {
-            Text(name) // Re-renders when count changes
-            Text("\(count)")
-            Button("Increment") { count += 1 }
-        }
-    }
-}
+## Resources
 
-// GOOD: Separate concerns
-struct OptimizedCounterView: View {
-    @State private var count = 0
-    
-    var body: some View {
-        VStack {
-            CounterTitleView() // Only re-renders when needed
-            CounterDisplayView(count: count)
-            CounterButtonView(count: $count)
-        }
-    }
-}
-
-struct CounterTitleView: View {
-    var body: some View {
-        Text("Counter")
-    }
-}
-
-struct CounterDisplayView: View {
-    let count: Int
-    
-    var body: some View {
-        Text("\(count)")
-    }
-}
-
-struct CounterButtonView: View {
-    @Binding var count: Int
-    
-    var body: some View {
-        Button("Increment") { count += 1 }
-    }
-}
-
-// Alternative: Use Equatable for custom comparisons
-struct EquatableView: View, Equatable {
-    let title: String
-    let count: Int
-    
-    var body: some View {
-        VStack {
-            Text(title)
-            Text("\(count)")
-        }
-    }
-    
-    static func == (lhs: EquatableView, rhs: EquatableView) -> Bool {
-        lhs.title == rhs.title && lhs.count == rhs.count
-    }
-}
-```
+- [List performance example](examples/example_list_optimization.swift)
+- [Task lifetime example](examples/example_memory_management.swift)
+- [Image downsampling and cell reuse](examples/example_image_loading.swift)
+- [Performance investigation prompts](examples/prompts.md)

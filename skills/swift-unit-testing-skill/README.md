@@ -1,32 +1,29 @@
 # Swift Unit Testing Skill
 
-This skill provides guidelines and templates for writing effective unit tests with XCTest, covering test-driven development, mocking techniques, and best practices for iOS app testing.
+Use this skill to design deterministic Swift tests and choose the correct Apple testing framework.
 
-## Activation
+## Baseline
 
-This skill activates automatically for queries related to:
-- XCTest framework usage
-- Unit testing Swift code
-- Test-driven development (TDD)
-- Mocking and dependency injection
-- Asynchronous testing
-- Performance and UI testing
+- Swift 6 and Xcode 16 or newer for Swift Testing.
+- Swift Testing is the default for new Swift unit and integration tests.
+- XCTest remains the right tool for UI automation, performance metrics, Objective-C interoperability, and legacy suites.
+- Deployment targets depend on the production APIs under test; state them in generated guidance.
 
-## Setup
+## Included examples
 
-To use this skill effectively:
+- `examples/example_basic_test.swift`: `@Test`, `#expect`, `#require`, suites, and parameterized cases.
+- `examples/example_async_test.swift`: async dependency injection with a production `URLSession` adapter and deterministic stubs.
+- `examples/prompts.md`: representative requests that should activate the skill.
 
-1. Create a test target in your Xcode project (File > New > Target > Unit Testing Bundle).
-2. Import your app module with `@testable import YourAppName`.
-3. Use descriptive test method names starting with `test`.
-4. Structure tests with Arrange-Act-Assert pattern.
+The example files are standalone teaching fixtures. In an application, place the system under test in the app or package target and import that module from the test target.
 
-## Examples
+## Principles
 
-See the `examples/` directory for sample test code and prompts demonstrating various testing techniques.
+- Test observable behavior.
+- Await asynchronous work instead of relying on timing.
+- Inject network, clock, randomness, and persistence boundaries.
+- Keep parallel tests isolated.
+- Use accessibility identifiers and explicit waits in UI tests.
+- Use XCTest metrics and baselines for performance work.
 
-## Resources
-
-- [XCTest Documentation](https://developer.apple.com/documentation/xctest)
-- [Testing in Xcode](https://developer.apple.com/library/archive/documentation/DeveloperTools/Conceptual/testing_with_xcode/)
-- [WWDC Sessions on Testing](https://developer.apple.com/videos/testing/)
+Resources: [Swift Testing](https://developer.apple.com/xcode/swift-testing/), [Testing documentation](https://developer.apple.com/documentation/testing/), and [XCTest](https://developer.apple.com/documentation/xctest/).

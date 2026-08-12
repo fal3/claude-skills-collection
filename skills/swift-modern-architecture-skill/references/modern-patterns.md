@@ -1,409 +1,134 @@
-# Modern Swift & iOS Architecture Patterns (2025)
+# Modern architecture patterns
 
-This reference guide covers modern patterns for Swift 6 and iOS 18+ development.
+The package baseline is Swift 6 strict concurrency with iOS/iPadOS 18 or macOS 15. These are defaults for that baseline, not universal rules for every Swift program.
 
-## Swift 6 Concurrency
+## Choose technology from constraints
 
-### Strict Concurrency Checking
-- Use `@MainActor` for UI-bound types
-- Avoid `@unchecked Sendable` - use proper `Sendable` conformance
-- Use `sending` parameter for transferring data between isolation domains
-- Use structured concurrency (`async let`, `TaskGroup`) over unstructured (`Task {}`)
+### Observation
 
-### Modern Async Patterns
+Use `@Observable` for new UI state when all deployment targets support Observation. A view-created reference belongs in `@State`; an injected reference can be a plain property, with local `@Bindable` for bindings.
+
+Keep `ObservableObject`/Combine when supporting older targets, integrating publisher APIs, or migrating incrementally. Avoid converting stable publisher pipelines merely for fashion.
+
+### Persistence
+
+SwiftData is a strong option when its model, querying, migration, sync, and target support match the feature. Core Data remains appropriate for mature stores and established migration/sync behavior. SQLite layers, files, and cloud services can be better fits for other requirements.
+
+Before choosing, write down:
+
+- relationship and uniqueness rules;
+- dataset/query scale;
+- background import and concurrency needs;
+- CloudKit or other sync constraints;
+- extensions and shared-container access;
+- migration history, downgrade, export, and recovery needs.
+
+### Asynchrony
+
+Use structured concurrency for new asynchronous flows. Preserve Dispatch or operation queues when an API requires a queue, when interoperating with existing code, or when their scheduling semantics are deliberately used. Bridge at a narrow boundary and test cancellation.
+
+### Testing
+
+Swift Testing is a good fit for new unit/integration tests with parameterization and traits. XCTest remains supported, works alongside it, and continues to cover UI automation and familiar performance-test APIs.
+
+## Feature model pattern
+
+Use a feature model when a screen coordinates asynchronous work, multiple sources of state, or business transitions. A static or locally stateful view often needs no model.
+
+Properties of a robust UI feature model:
+
+- explicit `@MainActor` isolation;
+- observable state with restricted setters where useful;
+- initializer-injected side-effect dependencies;
+- intent methods named for user actions;
+- owned task cancellation and request identity;
+- distinct idle/loading/content/empty/failure state when the UX needs it.
+
+See [observable ownership](../examples/observable_ownership.swift) and [request cancellation](../examples/weather_request_cancellation.swift).
+
+## Dependency boundaries
+
+Create protocols at stable behavior seams:
+
 ```swift
-// ✅ Modern: Structured concurrency with TaskGroup
-func fetchMultipleResources() async throws -> [Resource] {
-    try await withThrowingTaskGroup(of: Resource.self) { group in
-        for id in resourceIDs {
-            group.addTask { try await fetchResource(id) }
-        }
-        return try await group.reduce(into: []) { $0.append($1) }
-    }
-}
-
-// ❌ Outdated: Unstructured tasks
-func fetchMultipleResources() async throws -> [Resource] {
-    let tasks = resourceIDs.map { id in
-        Task { try await fetchResource(id) }
-    }
-    return try await tasks.asyncMap { try await $0.value }
+protocol AvatarLoading: Sendable {
+    func avatar(for userID: User.ID) async throws -> Avatar
 }
 ```
 
-## SwiftData (Not Core Data)
+The types in this fragment (`User` and `Avatar`) are feature-domain types; the snippet illustrates the protocol shape rather than claiming to be standalone.
 
-### Model Definition
-```swift
-// ✅ Modern: SwiftData with @Model
-import SwiftData
+Good seams often include clocks, ID generation, network clients, persistence repositories, notification authorization, and file access. Avoid “one protocol per concrete type” when no substitution, isolation, or test value exists.
 
-@Model
-final class Book {
-    var title: String
-    var author: String
-    var publishedDate: Date
-    @Relationship(deleteRule: .cascade) var chapters: [Chapter]
-    
-    init(title: String, author: String, publishedDate: Date) {
-        self.title = title
-        self.author = author
-        self.publishedDate = publishedDate
-        self.chapters = []
-    }
-}
+Keep the composition root near the app/scene boundary. Environment injection is useful for subtree-wide dependencies; initializer injection makes local requirements visible.
 
-// ❌ Outdated: Core Data with NSManagedObject
-```
+## Error modeling
 
-### Data Access
-```swift
-// ✅ Modern: @Query with sorting and filtering
-struct BookListView: View {
-    @Query(sort: \Book.publishedDate, order: .reverse) 
-    private var books: [Book]
-    
-    var body: some View {
-        List(books) { book in
-            BookRow(book: book)
-        }
-    }
-}
-```
+Preserve technical errors in logs/telemetry and map them to stable, localized user outcomes. Distinguish:
 
-## Observation Framework (Not Combine)
+- cancellation, which normally produces no error UI;
+- validation errors the user can correct;
+- transient errors that can retry;
+- authentication or permission states requiring a different flow;
+- data corruption or migration failures requiring recovery.
 
-### Observable Objects
-```swift
-// ✅ Modern: @Observable macro
-import Observation
+Do not use `try?` for a side effect whose failure changes user-visible truth.
 
-@Observable
-final class AuthViewModel {
-    var isAuthenticated = false
-    var user: User?
-    
-    func signIn(email: String, password: String) async throws {
-        // Authentication logic
-        isAuthenticated = true
-    }
-}
+## Latest-request-wins pattern
 
-// ❌ Outdated: ObservableObject with @Published
-class AuthViewModel: ObservableObject {
-    @Published var isAuthenticated = false
-    @Published var user: User?
-}
-```
+Search, selection, and refresh inputs commonly race. A robust implementation:
 
-### View Integration
-```swift
-// ✅ Modern: Direct property access, @Bindable for two-way binding
-struct ProfileView: View {
-    @Bindable var viewModel: ProfileViewModel
-    
-    var body: some View {
-        TextField("Name", text: $viewModel.name)
-        Text(viewModel.email) // No $ needed for read-only
-    }
-}
+1. increments a request generation or creates a request ID;
+2. cancels the prior owned task;
+3. captures the new input and generation;
+4. awaits the service;
+5. checks cancellation and current generation/input;
+6. publishes content/error/loading only for the current request.
 
-// ❌ Outdated: @StateObject, @ObservedObject, @EnvironmentObject
-```
+Cancellation alone is insufficient because a dependency may complete before it observes cancellation. See [the complete implementation](../examples/weather_request_cancellation.swift).
 
-## Modern API Client Patterns
+## SwiftData transaction discipline
 
-### URLSession with async/await
-```swift
-// ✅ Modern: async/await with proper error handling
-actor APIClient {
-    private let session: URLSession
-    private let decoder: JSONDecoder
-    
-    init(session: URLSession = .shared) {
-        self.session = session
-        self.decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-    }
-    
-    func fetch<T: Decodable>(_ endpoint: Endpoint) async throws -> T {
-        let (data, response) = try await session.data(for: endpoint.urlRequest)
-        
-        guard let httpResponse = response as? HTTPURLResponse,
-              (200...299).contains(httpResponse.statusCode) else {
-            throw APIError.invalidResponse
-        }
-        
-        return try decoder.decode(T.self, from: data)
-    }
-}
+- Register the full schema in a tested container.
+- Make save failure visible to the caller or UI.
+- Roll back intentionally; remember that `rollback()` covers all unsaved changes in that context.
+- Resolve `onDelete` offsets against the exact displayed collection.
+- Use separate contexts/transactions when independent edits need independent recovery.
+- Test uniqueness, relationship deletion, store unavailability, memory pressure, and sync behavior.
 
-// ❌ Outdated: Completion handlers, DispatchQueue.main.async
-```
+See [the filtered-delete implementation](../examples/todo_filtered_delete.swift).
 
-## View Architecture
+## Migration discipline
 
-### Navigation
-```swift
-// ✅ Modern: NavigationStack with NavigationPath
-struct AppView: View {
-    @State private var path = NavigationPath()
-    
-    var body: some View {
-        NavigationStack(path: $path) {
-            ContentView()
-                .navigationDestination(for: Book.self) { book in
-                    BookDetailView(book: book)
-                }
-                .navigationDestination(for: Author.self) { author in
-                    AuthorDetailView(author: author)
-                }
-        }
-    }
-}
+Define each shipped model version with `VersionedSchema`, connect versions using `SchemaMigrationPlan`, and choose lightweight or custom stages from the actual schema change. Do not infer migration safety from a fresh in-memory store.
 
-// ❌ Outdated: NavigationView with NavigationLink(destination:)
-```
+Validation should include:
 
-### Environment Integration
-```swift
-// ✅ Modern: Environment with @Entry and @Observable
-extension EnvironmentValues {
-    @Entry var theme: AppTheme = .default
-}
+1. fixture stores from every public schema version;
+2. representative scale and relationships;
+3. interrupted/failed migration recovery;
+4. CloudKit or external-sync constraints;
+5. app-extension access and file coordination;
+6. backup/export and support diagnostics;
+7. rollout and rollback criteria.
 
-struct ContentView: View {
-    @Environment(\.theme) private var theme
-    
-    var body: some View {
-        Text("Hello")
-            .foregroundStyle(theme.primaryColor)
-    }
-}
+SwiftData and Core Data can coexist behind repository boundaries during a staged migration. Keep the old path until real migration and usage evidence supports removal.
 
-// ❌ Outdated: Custom EnvironmentKey with preference
-```
+## Navigation state
 
-## Swift 6 Features
+Use `Hashable` values for destinations and keep the path at the scene/feature boundary that owns it. Decode deep links into validated routes. Restoration data is untrusted over time: model versions change and signed-in state may invalidate old routes.
 
-### Typed Throws (SE-0413)
-```swift
-// ✅ Modern: Typed throws for specific error types
-enum ValidationError: Error {
-    case invalidEmail
-    case passwordTooShort
-}
+Use a coordinator when it buys something concrete: UIKit bridging, cross-feature orchestration, complex modal policy, or compatibility with an existing navigation system.
 
-func validateCredentials(_ email: String, _ password: String) throws(ValidationError) {
-    guard email.contains("@") else {
-        throw .invalidEmail
-    }
-    guard password.count >= 8 else {
-        throw .passwordTooShort
-    }
-}
+## Performance without mythology
 
-// Usage with specific error handling
-do {
-    try validateCredentials(email, password)
-} catch let error: ValidationError {
-    // Only catches ValidationError
-    handleError(error)
-}
-```
+- Profile release builds on representative devices.
+- Page and filter in the data layer instead of fetching an unbounded store.
+- Bound task-group fan-out for large inputs.
+- Keep expensive work out of SwiftUI `body`.
+- Use stable identity and measure SwiftUI updates with Instruments.
+- Do not assume a `LazyVStack` is faster than `List` or that extracting a view guarantees an isolated redraw boundary.
 
-### Non-copyable Types (SE-0390)
-```swift
-// ✅ Modern: Non-copyable for resource management
-struct FileHandle: ~Copyable {
-    private let descriptor: Int32
-    
-    init(path: String) throws {
-        self.descriptor = open(path, O_RDONLY)
-        guard descriptor >= 0 else {
-            throw FileError.cannotOpen
-        }
-    }
-    
-    deinit {
-        close(descriptor)
-    }
-}
-```
+## Security and privacy boundaries
 
-### Embedded Swift
-```swift
-// ✅ For resource-constrained environments
-@_expose(wasm)
-public func processData(_ input: UnsafeBufferPointer<UInt8>) -> Int32 {
-    // Embedded Swift without runtime overhead
-    return input.reduce(0, +)
-}
-```
-
-## Testing Patterns
-
-### Swift Testing Framework (Not XCTest)
-```swift
-// ✅ Modern: Swift Testing with @Test macro
-import Testing
-
-@Test("User authentication succeeds with valid credentials")
-func testAuthentication() async throws {
-    let service = AuthService()
-    let result = try await service.authenticate(
-        email: "test@example.com",
-        password: "ValidPass123"
-    )
-    #expect(result.isAuthenticated)
-}
-
-@Test("Validation fails with invalid email", arguments: [
-    "notanemail",
-    "missing@domain",
-    "@nodomain.com"
-])
-func testEmailValidation(invalidEmail: String) throws {
-    #expect(throws: ValidationError.self) {
-        try validateEmail(invalidEmail)
-    }
-}
-
-// ❌ Outdated: XCTestCase with XCTAssert
-```
-
-## Performance & Memory
-
-### Prefer Value Types
-```swift
-// ✅ Modern: Value semantics with struct
-struct UserProfile: Sendable {
-    let id: UUID
-    let name: String
-    let email: String
-    var preferences: UserPreferences
-}
-
-// ❌ Outdated: Reference semantics for simple data
-class UserProfile {
-    let id: UUID
-    var name: String
-    var email: String
-}
-```
-
-### Lazy Collections
-```swift
-// ✅ Modern: Lazy evaluation for large sequences
-let results = data
-    .lazy
-    .filter { $0.isValid }
-    .map { $0.transform() }
-    .prefix(10)
-
-// ❌ Outdated: Eager evaluation of entire sequence
-```
-
-## UI Best Practices
-
-### Prefer Built-in Components
-```swift
-// ✅ Modern: Use native SwiftUI components
-List {
-    ForEach(items) { item in
-        LabeledContent(item.name) {
-            Text(item.value)
-        }
-    }
-}
-
-// ❌ Outdated: Custom implementations of standard patterns
-```
-
-### Dynamic Type Support
-```swift
-// ✅ Modern: Automatic Dynamic Type with .font()
-Text("Title")
-    .font(.title)
-    .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-
-// ❌ Outdated: Fixed font sizes
-Text("Title")
-    .font(.system(size: 24))
-```
-
-## Architecture Guidelines
-
-### MVVM with @Observable
-```swift
-// ✅ View Model with business logic
-@Observable
-final class BookDetailViewModel {
-    private let bookService: BookService
-    private(set) var book: Book
-    private(set) var isLoading = false
-    private(set) var error: Error?
-    
-    init(book: Book, bookService: BookService) {
-        self.book = book
-        self.bookService = bookService
-    }
-    
-    func refresh() async {
-        isLoading = true
-        defer { isLoading = false }
-        
-        do {
-            book = try await bookService.fetchBook(id: book.id)
-        } catch {
-            self.error = error
-        }
-    }
-}
-
-// ✅ Lightweight view
-struct BookDetailView: View {
-    let viewModel: BookDetailViewModel
-    
-    var body: some View {
-        ScrollView {
-            content
-        }
-        .task { await viewModel.refresh() }
-    }
-    
-    @ViewBuilder
-    private var content: some View {
-        if viewModel.isLoading {
-            ProgressView()
-        } else {
-            VStack(alignment: .leading, spacing: 16) {
-                Text(viewModel.book.title)
-                    .font(.title)
-                Text(viewModel.book.author)
-                    .font(.subheadline)
-            }
-        }
-    }
-}
-```
-
-## Common Migrations
-
-### From Core Data to SwiftData
-1. Replace `@NSManaged` with direct properties
-2. Replace `@FetchRequest` with `@Query`
-3. Replace `NSManagedObjectContext` with `ModelContext`
-4. Replace Core Data predicates with native Swift expressions
-
-### From Combine to Observation
-1. Replace `ObservableObject` with `@Observable`
-2. Remove `@Published` property wrappers
-3. Replace `@StateObject` with direct initialization
-4. Replace `sink` with direct observation
-
-### From GCD to Swift Concurrency
-1. Replace `DispatchQueue.main.async` with `@MainActor`
-2. Replace completion handlers with `async/await`
-3. Replace dispatch groups with `TaskGroup`
-4. Replace dispatch barriers with `actor` isolation
+Keep credentials in Keychain-backed storage, not `UserDefaults`. Apply transport policy, validate server trust using platform defaults unless requirements demand more, minimize collected data, and keep private data out of accessibility labels, logs, and analytics. Architecture guidance does not replace a dedicated security/privacy review.

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Swift Testing"
+  short_description: "Write reliable Swift Testing and XCTest suites"
+  default_prompt: "Use $swift-unit-testing-skill to design and verify this test suite."

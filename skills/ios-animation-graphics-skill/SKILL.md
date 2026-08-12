@@ -1,561 +1,123 @@
 ---
 name: iOS Animation Graphics Skill
-description: Creating animations and graphics using SwiftUI Canvas, Core Animation, and Lottie integration for engaging iOS app experiences.
-version: 1.0
-activation: Activate for queries on iOS animations, SwiftUI Canvas usage, Lottie integration, Core Animation, or custom graphics creation.
+description: Design, implement, debug, and review accessible Apple-platform animation and graphics with SwiftUI animation, Canvas, TimelineView, matched geometry, phase/keyframe animators, Core Animation, and Lottie. Use for motion design, custom drawing, transitions, particles, animated symbols, UIKit/AppKit bridging, Reduce Motion, and animation performance. Prefer native SwiftUI for app UI; use Core Animation or Lottie only when their capabilities are needed. Do not use this skill for SpriteKit/Metal game engines, video rendering, or image editing unless animation integration is the specific task.
 ---
 
-# iOS Animation Graphics Skill
+# Apple UI Animation and Graphics
 
-This skill provides expertise in creating smooth animations and custom graphics for iOS applications using SwiftUI Canvas, Core Animation, and Lottie. It covers animation principles, performance considerations, and integration with Apple's design system.
+Choose the simplest rendering system that expresses the motion, then make accessibility and lifecycle behavior part of the design rather than a later patch.
 
-## Best Practices
+## Compatibility baseline
 
-1. **Performance First**: Use lightweight animations that don't impact scrolling or user interaction.
+- `Canvas` and `TimelineView` require iOS 15, macOS 12, tvOS 15, or watchOS 8.
+- `matchedGeometryEffect` requires iOS 14 / macOS 11.
+- `PhaseAnimator`, `KeyframeAnimator`, and the first symbol-effect APIs require iOS 17 / macOS 14.
+- Zoom navigation transitions and SwiftUI animation bridging into UIKit/AppKit require iOS 18 / macOS 15 where documented.
+- Lottie’s native SwiftUI `LottieView` was introduced in Lottie 4.3. Pin a tested package version and obey that release’s Xcode, Swift, and deployment requirements; Lottie 4.6 requires Xcode 16 / Swift 6.
+- Gate newer APIs with `#available` and provide a meaningful lower-target result. Treat 27-cycle APIs as unavailable unless the project actually builds with that SDK.
 
-2. **Meaningful Motion**: Ensure animations enhance user experience and provide visual feedback.
+State the exact minimum that the proposed implementation needs; do not assign one minimum to every animation technique.
 
-3. **Consistent Timing**: Use standard animation durations (0.2-0.5 seconds) for familiarity.
+## Select the rendering path
 
-4. **Hardware Acceleration**: Leverage GPU-accelerated properties for smooth animations.
+| Need | Preferred tool |
+| --- | --- |
+| Animate SwiftUI state, layout, or transitions | `withAnimation`, value-scoped `.animation`, `transition` |
+| Several discrete or timed phases | `PhaseAnimator` / `KeyframeAnimator` on iOS 17+ |
+| Draw many lightweight vector elements | `Canvas` |
+| Redraw continuously from elapsed time | `TimelineView(.animation)` around `Canvas` |
+| Synchronize two SwiftUI layouts | `matchedGeometryEffect` |
+| Animate an SF Symbol | `symbolEffect` where available |
+| Control a layer tree or UIKit view | Core Animation / `UIViewRepresentable` |
+| Play designer-authored JSON or `.lottie` assets | Lottie |
 
-5. **Accessibility**: Respect reduced motion preferences and provide alternatives.
+Do not drive a `Canvas` by changing a captured scalar with `withAnimation`; a renderer closure is not itself animatable data. Derive each frame from a `TimelineView` date or expose explicit animatable values in a custom view.
 
-6. **State-Driven**: Bind animations to view state for automatic updates.
+## Workflow
 
-## Animation Guidelines
+1. Declare the before/after states and what event starts or stops motion.
+2. Check the project’s deployment targets and third-party dependency version.
+3. Define Reduce Motion behavior: static end state, dissolve, shortened travel, or no autoplay.
+4. Pick the rendering path from the table above.
+5. Keep animation state as the source of truth; avoid imperative controls that drift from SwiftUI state.
+6. Test interruption, repeated taps, navigation, background/foreground, resizing, and device rotation.
+7. Profile representative hardware with SwiftUI, Core Animation, and Time Profiler instruments when frames drop.
 
-- Use SwiftUI's built-in animation modifiers for simple transitions.
-- Implement Canvas for custom drawings and complex graphics.
-- Integrate Lottie for designer-created animations.
-- Combine multiple animation techniques for rich interactions.
-- Test animations on actual devices for performance.
-- Consider different screen sizes and orientations.
+## SwiftUI rules
 
-## Examples
-
-### Example 1: Basic SwiftUI Animations
-
-**User Prompt:** "Create a button that scales and changes color when tapped using SwiftUI animations."
-
-**Expected Output:**
-```swift
-import SwiftUI
-
-struct AnimatedButton: View {
-    @State private var isPressed = false
-    @State private var tapCount = 0
-    
-    var body: some View {
-        ZStack {
-            Circle()
-                .fill(isPressed ? Color.blue : Color.red)
-                .frame(width: isPressed ? 120 : 100, height: isPressed ? 120 : 100)
-                .shadow(radius: isPressed ? 10 : 5)
-                .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isPressed)
-            
-            Text("\(tapCount)")
-                .font(.title)
-                .foregroundColor(.white)
-                .scaleEffect(isPressed ? 1.2 : 1.0)
-                .animation(.easeInOut(duration: 0.2), value: isPressed)
-        }
-        .onTapGesture {
-            isPressed.toggle()
-            tapCount += 1
-            
-            // Reset after animation
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                isPressed = false
-            }
-        }
-    }
-}
-
-// Advanced example with multiple animations
-struct ComplexAnimatedView: View {
-    @State private var isAnimating = false
-    
-    var body: some View {
-        VStack(spacing: 20) {
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color.blue)
-                .frame(width: isAnimating ? 200 : 100, height: 100)
-                .rotationEffect(.degrees(isAnimating ? 360 : 0))
-                .offset(y: isAnimating ? -50 : 0)
-                .animation(.interpolatingSpring(mass: 1.0, stiffness: 100, damping: 10, initialVelocity: 0), value: isAnimating)
-            
-            Button("Animate") {
-                isAnimating.toggle()
-            }
-            .buttonStyle(.borderedProminent)
-        }
-        .padding()
-    }
-}
-```
-
-### Example 2: SwiftUI Canvas for Custom Graphics
-
-**User Prompt:** "Draw a custom animated waveform using SwiftUI Canvas."
-
-**Expected Output:**
-```swift
-import SwiftUI
-
-struct WaveformView: View {
-    @State private var phase = 0.0
-    
-    var body: some View {
-        VStack {
-            Canvas { context, size in
-                let width = size.width
-                let height = size.height
-                let centerY = height / 2
-                
-                // Draw waveform
-                var path = Path()
-                path.move(to: CGPoint(x: 0, y: centerY))
-                
-                for x in stride(from: 0, to: width, by: 1) {
-                    let relativeX = x / width
-                    let y = centerY + sin(relativeX * .pi * 4 + phase) * 30
-                    path.addLine(to: CGPoint(x: x, y: y))
-                }
-                
-                context.stroke(path, with: .color(.blue), lineWidth: 2)
-                
-                // Draw amplitude bars
-                for i in 0..<10 {
-                    let barHeight = abs(sin(phase + Double(i) * 0.5)) * 50
-                    let barX = width * 0.1 * Double(i + 1)
-                    
-                    let barRect = CGRect(x: barX - 2, y: centerY - barHeight/2, width: 4, height: barHeight)
-                    context.fill(Path(barRect), with: .color(.green.opacity(0.6)))
-                }
-            }
-            .frame(height: 200)
-            .background(Color.gray.opacity(0.1))
-            .cornerRadius(10)
-            
-            Button("Animate Wave") {
-                withAnimation(.linear(duration: 2).repeatForever(autoreverses: false)) {
-                    phase += .pi * 2
-                }
-            }
-            .buttonStyle(.bordered)
-        }
-        .padding()
-    }
-}
-
-// Interactive canvas example
-struct DrawingCanvas: View {
-    @State private var paths: [Path] = []
-    @State private var currentPath = Path()
-    @State private var isDrawing = false
-    
-    var body: some View {
-        VStack {
-            Canvas { context, size in
-                for path in paths {
-                    context.stroke(path, with: .color(.blue), lineWidth: 3)
-                }
-                context.stroke(currentPath, with: .color(.red), lineWidth: 3)
-            }
-            .frame(height: 300)
-            .background(Color.white)
-            .border(Color.gray, width: 1)
-            .gesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { value in
-                        let point = value.location
-                        if !isDrawing {
-                            currentPath.move(to: point)
-                            isDrawing = true
-                        } else {
-                            currentPath.addLine(to: point)
-                        }
-                    }
-                    .onEnded { _ in
-                        paths.append(currentPath)
-                        currentPath = Path()
-                        isDrawing = false
-                    }
-            )
-            
-            Button("Clear") {
-                paths = []
-                currentPath = Path()
-            }
-            .buttonStyle(.bordered)
-        }
-        .padding()
-    }
-}
-```
-
-### Example 3: Lottie Animation Integration
-
-**User Prompt:** "Integrate a Lottie animation that plays on button tap."
-
-**Expected Output:**
-First, add Lottie to your project using Swift Package Manager:
-- Add https://github.com/airbnb/lottie-ios.git
+- Scope implicit animations with `.animation(_:value:)`.
+- Use `withAnimation` for an explicit state mutation.
+- Prefer opacity, scale, rotation, and offset for hot paths; animating frame constraints can trigger repeated layout.
+- Keep stable identity across transitions. Do not use changing random IDs to force animation.
+- Let interactive gestures update state continuously and choose a spring only when the gesture ends.
+- Use animation completion APIs only at their documented availability; do not infer completion from a fixed sleep.
 
 ```swift
-import SwiftUI
-import Lottie
+@Environment(\.accessibilityReduceMotion) private var reduceMotion
+@State private var isExpanded = false
 
-struct LottieAnimationView: View {
-    @State private var isPlaying = false
-    @State private var animationView: LottieAnimationView?
-    
-    var body: some View {
-        VStack(spacing: 20) {
-            // Lottie Animation Container
-            ZStack {
-                Color.gray.opacity(0.1)
-                    .frame(height: 200)
-                    .cornerRadius(10)
-                
-                if let animationView = animationView {
-                    LottieView(animationView: animationView)
-                        .frame(height: 200)
-                } else {
-                    Text("Loading animation...")
-                        .foregroundColor(.secondary)
-                }
-            }
-            
-            HStack(spacing: 20) {
-                Button(action: {
-                    playAnimation()
-                }) {
-                    Label("Play", systemImage: "play.fill")
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(isPlaying)
-                
-                Button(action: {
-                    stopAnimation()
-                }) {
-                    Label("Stop", systemImage: "stop.fill")
-                }
-                .buttonStyle(.bordered)
-                .disabled(!isPlaying)
-            }
-        }
-        .padding()
-        .onAppear {
-            loadAnimation()
-        }
-    }
-    
-    private func loadAnimation() {
-        // Load animation from bundle (you would add the JSON file to your project)
-        if let animation = LottieAnimation.named("celebration") {
-            animationView = LottieAnimationView(animation: animation)
-            animationView?.loopMode = .playOnce
-        }
-    }
-    
-    private func playAnimation() {
-        isPlaying = true
-        animationView?.play { _ in
-            isPlaying = false
-        }
-    }
-    
-    private func stopAnimation() {
-        animationView?.stop()
-        isPlaying = false
+Button("Details") {
+    withAnimation(reduceMotion ? nil : .snappy) {
+        isExpanded.toggle()
     }
 }
-
-// UIViewRepresentable wrapper for Lottie
-struct LottieView: UIViewRepresentable {
-    let animationView: LottieAnimationView
-    
-    func makeUIView(context: Context) -> UIView {
-        let view = UIView()
-        view.addSubview(animationView)
-        animationView.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            animationView.topAnchor.constraint(equalTo: view.topAnchor),
-            animationView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            animationView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            animationView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
-        ])
-        return view
-    }
-    
-    func updateUIView(_ uiView: UIView, context: Context) {
-        // Update if needed
-    }
-}
-
-// Alternative: Using Lottie with SwiftUI state
-struct StatefulLottieView: View {
-    @State private var play = false
-    
-    var body: some View {
-        VStack {
-            LottieView(animation: .named("loading"))
-                .playbackMode(.playing(.toProgress(1, loopMode: .loop)))
-                .frame(height: 100)
-            
-            Button("Toggle Animation") {
-                play.toggle()
-            }
-            .buttonStyle(.bordered)
-        }
-    }
-}
+.scaleEffect(isExpanded ? 1.08 : 1)
+.opacity(isExpanded ? 1 : 0.85)
 ```
 
-### Example 4: Core Animation with UIViewRepresentable
+For multi-stage motion on iOS 17+, prefer phase or keyframe animators over chains of delayed tasks. Provide a simple state change for earlier targets.
 
-**User Prompt:** "Create a UIViewRepresentable that uses Core Animation for a rotating gradient border."
+## Canvas and continuous drawing
 
-**Expected Output:**
-```swift
-import SwiftUI
-import UIKit
+`Canvas` redraws when its surrounding view invalidates. For time-based graphics, wrap it in `TimelineView(.animation(paused:))` and derive phase from `context.date`. Pause the schedule for Reduce Motion and when the animation is not visible or active.
 
-struct RotatingGradientBorder: View {
-    @State private var isAnimating = false
-    
-    var body: some View {
-        ZStack {
-            GradientBorderView(isAnimating: $isAnimating)
-                .frame(width: 150, height: 150)
-            
-            Button(action: {
-                isAnimating.toggle()
-            }) {
-                Text(isAnimating ? "Stop" : "Start")
-                    .foregroundColor(.white)
-                    .padding()
-                    .background(Color.blue.opacity(0.8))
-                    .cornerRadius(10)
-            }
-        }
-    }
-}
+Read [examples/example_canvas_waveform.swift](examples/example_canvas_waveform.swift) for a complete iOS 15+ waveform. It uses time as the source of truth, has no accumulating phase drift, and renders a static frame for Reduce Motion.
 
-struct GradientBorderView: UIViewRepresentable {
-    @Binding var isAnimating: Bool
-    
-    func makeUIView(context: Context) -> UIView {
-        let view = UIView()
-        view.backgroundColor = .clear
-        
-        // Create gradient layer
-        let gradientLayer = CAGradientLayer()
-        gradientLayer.colors = [UIColor.red.cgColor, UIColor.blue.cgColor, UIColor.green.cgColor, UIColor.red.cgColor]
-        gradientLayer.startPoint = CGPoint(x: 0, y: 0)
-        gradientLayer.endPoint = CGPoint(x: 1, y: 1)
-        gradientLayer.frame = view.bounds
-        
-        // Create shape layer for border
-        let shapeLayer = CAShapeLayer()
-        shapeLayer.lineWidth = 4
-        shapeLayer.fillColor = UIColor.clear.cgColor
-        shapeLayer.strokeColor = UIColor.black.cgColor
-        shapeLayer.path = UIBezierPath(roundedRect: view.bounds.insetBy(dx: 2, dy: 2), cornerRadius: 20).cgPath
-        
-        // Mask gradient with shape
-        gradientLayer.mask = shapeLayer
-        
-        // Add rotation animation
-        let rotationAnimation = CABasicAnimation(keyPath: "transform.rotation.z")
-        rotationAnimation.fromValue = 0
-        rotationAnimation.toValue = CGFloat.pi * 2
-        rotationAnimation.duration = 2.0
-        rotationAnimation.repeatCount = .infinity
-        
-        context.coordinator.animation = rotationAnimation
-        context.coordinator.gradientLayer = gradientLayer
-        
-        view.layer.addSublayer(gradientLayer)
-        
-        return view
-    }
-    
-    func updateUIView(_ uiView: UIView, context: Context) {
-        if isAnimating {
-            context.coordinator.gradientLayer?.add(context.coordinator.animation!, forKey: "rotation")
-        } else {
-            context.coordinator.gradientLayer?.removeAnimation(forKey: "rotation")
-        }
-    }
-    
-    func makeCoordinator() -> Coordinator {
-        Coordinator()
-    }
-    
-    class Coordinator {
-        var animation: CABasicAnimation?
-        var gradientLayer: CAGradientLayer?
-    }
-}
+Control work per frame:
 
-// Advanced Core Animation example
-struct ParticleSystemView: UIViewRepresentable {
-    func makeUIView(context: Context) -> UIView {
-        let view = UIView()
-        
-        // Create particle emitter
-        let emitter = CAEmitterLayer()
-        emitter.emitterPosition = CGPoint(x: 200, y: 100)
-        emitter.emitterSize = CGSize(width: 10, height: 10)
-        emitter.emitterShape = .circle
-        
-        // Create particle cell
-        let cell = CAEmitterCell()
-        cell.birthRate = 50
-        cell.lifetime = 2.0
-        cell.velocity = 100
-        cell.velocityRange = 50
-        cell.emissionRange = .pi * 2
-        cell.scale = 0.1
-        cell.scaleRange = 0.05
-        cell.contents = UIImage(systemName: "star.fill")?.cgImage
-        cell.color = UIColor.blue.cgColor
-        
-        emitter.emitterCells = [cell]
-        view.layer.addSublayer(emitter)
-        
-        return view
-    }
-    
-    func updateUIView(_ uiView: UIView, context: Context) {
-        // Update if needed
-    }
-}
-```
+- Step vector paths at the coarsest visually acceptable interval.
+- Cache expensive geometry or resolved symbols when inputs are unchanged.
+- Avoid allocating images, formatters, or large collections inside the renderer.
+- Respect `TimelineView` cadence and pause offscreen work.
 
-### Example 5: Matched Geometry Effect
+## Core Animation bridging
 
-**User Prompt:** "Implement a hero transition between two views using SwiftUI's matchedGeometryEffect."
+Layer geometry is invalid in `makeUIView` when the host view still has zero bounds. Put layer sizing and mask paths in a `UIView` subclass’s `layoutSubviews`; disable implicit actions for those layout updates. Make playback updates idempotent and never force-unwrap a stored animation.
 
-**Expected Output:**
-```swift
-import SwiftUI
+Read [examples/example_gradient_border.swift](examples/example_gradient_border.swift) for a layout-safe, Reduce-Motion-aware border. Use the same pattern for emitter layers: update `frame` and `emitterPosition` from current bounds, set `birthRate` to zero when paused/reduced/offscreen, and remove animations during teardown.
 
-struct HeroTransitionView: View {
-    @State private var selectedItem: Item?
-    @Namespace private var namespace
-    
-    let items = [
-        Item(id: 1, title: "Mountain", imageName: "mountain", description: "A beautiful mountain landscape"),
-        Item(id: 2, title: "Ocean", imageName: "ocean", description: "Peaceful ocean waves"),
-        Item(id: 3, title: "Forest", imageName: "forest", description: "Lush green forest")
-    ]
-    
-    var body: some View {
-        ZStack {
-            if let selectedItem = selectedItem {
-                DetailView(item: selectedItem, namespace: namespace)
-                    .onTapGesture {
-                        withAnimation(.spring()) {
-                            self.selectedItem = nil
-                        }
-                    }
-            } else {
-                GridView(items: items, selectedItem: $selectedItem, namespace: namespace)
-            }
-        }
-    }
-}
+## Lottie
 
-struct GridView: View {
-    let items: [Item]
-    @Binding var selectedItem: Item?
-    let namespace: Namespace.ID
-    
-    var body: some View {
-        ScrollView {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 150))], spacing: 16) {
-                ForEach(items) { item in
-                    GridItemView(item: item, namespace: namespace)
-                        .onTapGesture {
-                            withAnimation(.spring()) {
-                                selectedItem = item
-                            }
-                        }
-                }
-            }
-            .padding()
-        }
-    }
-}
+Use Lottie’s native SwiftUI `LottieView` on Lottie 4.3+; do not create local types named `LottieView` or `LottieAnimationView`. Those names collide with library types and can make state declarations recursively refer to the wrong type.
 
-struct GridItemView: View {
-    let item: Item
-    let namespace: Namespace.ID
-    
-    var body: some View {
-        VStack {
-            Image(item.imageName)
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-                .frame(height: 100)
-                .clipped()
-                .cornerRadius(8)
-                .matchedGeometryEffect(id: item.id, in: namespace)
-            
-            Text(item.title)
-                .font(.caption)
-                .foregroundColor(.primary)
-        }
-        .background(Color.white)
-        .cornerRadius(8)
-        .shadow(radius: 2)
-    }
-}
+Keep playback declarative with `LottiePlaybackMode`. For Reduce Motion, show a meaningful static progress frame or an asset-authored reduced-motion marker rather than autoplaying. Verify the animation asset exists in the intended bundle and test VoiceOver focus while it plays.
 
-struct DetailView: View {
-    let item: Item
-    let namespace: Namespace.ID
-    
-    var body: some View {
-        VStack {
-            Spacer()
-            
-            Image(item.imageName)
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(maxHeight: 300)
-                .clipped()
-                .cornerRadius(16)
-                .matchedGeometryEffect(id: item.id, in: namespace)
-                .padding()
-            
-            Text(item.title)
-                .font(.largeTitle)
-                .foregroundColor(.primary)
-            
-            Text(item.description)
-                .font(.body)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-                .padding()
-            
-            Spacer()
-        }
-        .background(Color.white)
-        .edgesIgnoringSafeArea(.all)
-    }
-}
+Read [examples/example_lottie_animation.swift](examples/example_lottie_animation.swift) after adding a compatible Lottie package. The example intentionally has an external dependency and is not part of dependency-free compiler validation.
 
-struct Item: Identifiable {
-    let id: Int
-    let title: String
-    let imageName: String
-    let description: String
-}
-```
+## Accessibility
 
-Note: For the image examples above, you would need to add actual images to your asset catalog or use system images.
+- Read `accessibilityReduceMotion` in every view that autoplays, loops, travels, parallax-scrolls, or emits particles.
+- Preserve meaning when motion is removed; do not simply hide success/error state.
+- Avoid rapid flashing and large involuntary motion.
+- Do not make animation the only signal. Pair it with text, shape, sound, or haptics as appropriate.
+- Keep controls operable while animation is interrupted or disabled.
+- Decorative drawing should be accessibility-hidden; meaningful charts need labels or an accessible representation.
+
+## Performance and correctness review
+
+- Does the animation have one authoritative state and a deterministic stop condition?
+- Does continuous work stop offscreen, in the background, and under Reduce Motion?
+- Are Core Animation layer frames recalculated after nonzero layout and rotation?
+- Are repeated SwiftUI updates idempotent rather than restarting the same CA animation?
+- Does a Lottie view use the package’s types without name shadowing?
+- Are availability and package-version requirements explicit?
+- Has the effect been tested on a physical low-end supported device?
+- Are render cost, layout passes, overdraw, and memory measured rather than guessed?
+
+## Supporting material
+
+- [README.md](README.md) summarizes minimums and resource selection.
+- [examples/example_canvas_waveform.swift](examples/example_canvas_waveform.swift) demonstrates scheduled Canvas redraw.
+- [examples/example_gradient_border.swift](examples/example_gradient_border.swift) demonstrates layout-safe Core Animation bridging.
+- [examples/example_lottie_animation.swift](examples/example_lottie_animation.swift) demonstrates non-shadowing declarative Lottie playback.
+- [examples/prompts.md](examples/prompts.md) contains representative activation prompts.

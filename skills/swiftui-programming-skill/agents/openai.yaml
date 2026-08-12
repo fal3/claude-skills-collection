@@ -1,0 +1,4 @@
+interface:
+  display_name: "SwiftUI Programming"
+  short_description: "Build adaptive, accessible SwiftUI views"
+  default_prompt: "Use $swiftui-programming-skill to design and verify this SwiftUI implementation."

@@ -1,16 +1,18 @@
-# Example Prompts for Swift Unit Testing Skill
+# Example prompts
 
-## Prompt 1: Basic XCTest Structure
-"Create a basic unit test class with setup and teardown methods."
+## Should activate
 
-## Prompt 2: Testing Asynchronous Code
-"How do I write unit tests for asynchronous functions using expectations?"
+- "Write Swift Testing coverage for this async repository using `@Test` and `#expect`."
+- "Migrate these XCTest unit tests to Swift Testing while keeping the UI tests in XCTest."
+- "Create a parameterized test for this parser's valid and invalid inputs."
+- "Replace this `URLSession` subclass mock with an async transport protocol."
+- "Diagnose why this test passes locally but flakes under parallel CI execution."
+- "Test callback delivery counts with Swift Testing confirmations."
+- "Add an XCTest performance baseline for this image-processing operation."
+- "Make these XCUITests use accessibility identifiers and explicit waits."
 
-## Prompt 3: Mocking with Protocols
-"Create unit tests with protocol-based mocking for dependency injection."
+## Should not activate
 
-## Prompt 4: Performance Testing
-"Write a performance test to ensure a function executes within acceptable time limits."
-
-## Prompt 5: UI Testing Basics
-"Create a basic UI test for a SwiftUI view with a button and text field."
+- "Configure a third-party snapshot framework without naming the dependency."
+- "Run a full device UI automation campaign with no unit-test scope."
+- "Fix a production networking bug without adding or diagnosing tests."

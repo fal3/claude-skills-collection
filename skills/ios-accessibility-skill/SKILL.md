@@ -1,196 +1,114 @@
 ---
 name: iOS Accessibility Skill
-description: Best practices for implementing accessibility features in iOS apps, including VoiceOver support, Dynamic Type, and Human Interface Guidelines compliance.
-version: 1.0
-activation: Activate for queries on iOS accessibility, VoiceOver implementation, Dynamic Type, or making apps accessible to users with disabilities.
+description: Use when iOS or iPadOS accessibility design, implementation, review, or testing involves VoiceOver, Voice Control, Switch Control, Full Keyboard Access, Dynamic Type, contrast, motion, focus, media alternatives, or Assistive Access. Do not use for generic visual styling or platform-neutral UI work with no accessibility requirement.
 ---
 
 # iOS Accessibility Skill
 
-This skill focuses on making iOS applications accessible to all users, including those with visual, motor, or cognitive impairments. It covers VoiceOver, Dynamic Type, and adherence to Apple's Human Interface Guidelines (HIG) for accessibility.
+Treat accessibility as part of the product contract, not a modifier pass at the end. Preserve the semantics of native controls, support user settings, and verify behavior with the actual assistive technologies in scope.
 
-## Best Practices
+## Baseline and availability
 
-1. **VoiceOver Support**: Ensure all UI elements are properly labeled and navigable with VoiceOver.
+Core guidance applies broadly. Copy-ready examples use Xcode 15, Swift 5.9, and iOS/iPadOS 17.
 
-2. **Dynamic Type**: Support text scaling for users with visual impairments.
+- Assistive Access exists as a system experience on iOS/iPadOS 17.
+- `accessibilityAssistiveAccessEnabled` is available from iOS/iPadOS 18.
+- The SwiftUI `AssistiveAccess` scene and `assistiveAccessNavigationIcon` are stable Xcode 26 APIs requiring iOS/iPadOS 26.
+- OS 27-cycle material is beta relative to stable Xcode 26.6. Include it only on explicit request, label it beta, and gate it.
 
-3. **Color and Contrast**: Use sufficient color contrast and don't rely solely on color to convey information.
+Always check the user's deployment target before emitting newer API code.
 
-4. **Touch Targets**: Make interactive elements large enough (44x44 points minimum).
+## Audit order
 
-5. **HIG Compliance**: Follow Apple's accessibility guidelines throughout the design and development process.
+1. Identify essential tasks, content, and destructive actions.
+2. Inspect the accessibility tree: roles, labels, values, hints, ordering, grouping, and hidden decoration.
+3. Exercise VoiceOver, Voice Control, Switch Control, and Full Keyboard Access as relevant.
+4. Test every Dynamic Type size, including accessibility categories.
+5. Test Increase Contrast, Reduce Motion, Reduce Transparency, Differentiate Without Color, Bold Text, and button shapes.
+6. Verify localization, right-to-left layouts, captions/transcripts, and audio descriptions where applicable.
+7. Run Accessibility Inspector, then test on device and with disabled users when possible.
 
-6. **Testing**: Regularly test with accessibility features enabled.
+Automated checks can find omissions; they cannot prove that reading order, wording, focus, and task flow are usable.
 
-## Accessibility Guidelines
+## Semantics
 
-- Use semantic UI elements that come with built-in accessibility support.
-- Provide meaningful labels and hints for custom controls.
-- Group related elements and provide headers for complex layouts.
-- Support assistive technologies like VoiceOver, Zoom, and Switch Control.
-- Consider motor impairments when designing interactions.
-- Test with real users when possible.
+- Prefer semantic controls such as `Button`, `Toggle`, `TextField`, `Slider`, and `Link` over tap gestures on generic views.
+- Labels identify an element or action concisely. Values communicate current state. Hints describe the result when that result is not obvious.
+- Do not put gestures in hints: avoid “Tap,” “Double-tap,” or “Swipe.” VoiceOver already teaches interaction mechanics.
+- Do not repeat the control type in its label; the accessibility trait supplies it.
+- Hide purely decorative images. For icon-only buttons, label the button rather than exposing the image separately.
+- Add custom actions or rotors when they shorten a real workflow; retain an ordinary visible path to the action.
 
-## Examples
+See [the complete favorite-button example](examples/example_voiceover.swift). A hint such as “Adds this item to Favorites” describes the result; omit it when the label already makes that result clear.
 
-### Example 1: VoiceOver Labels in SwiftUI
+## Grouping and focus
 
-**User Prompt:** "How do I add VoiceOver labels to SwiftUI buttons?"
+- Use `.combine` for static fragments that should form one announcement, such as a title plus subtitle.
+- Use `.contain` to create a navigable group while preserving its interactive children.
+- Never combine multiple text fields, buttons, or other independently actionable controls into one accessibility element.
+- Keep focus order aligned with visual and task order. Restore focus deliberately after modal transitions or major content replacement.
+- Prefer state-driven updates. Post announcements only when important information would otherwise be missed; avoid interrupting speech for routine changes.
 
-**Expected Output:**
 ```swift
 import SwiftUI
 
-struct AccessibleButtonView: View {
+struct ContactForm: View {
+    @State private var name = ""
+    @State private var phone = ""
+
     var body: some View {
-        VStack {
-            Button(action: {
-                // Action
-            }) {
-                Image(systemName: "star.fill")
-                    .font(.largeTitle)
-            }
-            .accessibilityLabel("Favorite this item")
-            .accessibilityHint("Double tap to add to favorites")
-            
-            Button("Submit", action: {
-                // Submit action
-            })
-            .accessibilityHint("This will send your information")
-        }
-    }
-}
-```
-
-### Example 2: Dynamic Type Support
-
-**User Prompt:** "Implement Dynamic Type in a SwiftUI text view."
-
-**Expected Output:**
-```swift
-import SwiftUI
-
-struct DynamicTextView: View {
-    var body: some View {
-        VStack {
-            Text("This text scales with Dynamic Type")
-                .font(.body)
-            
-            Text("Headline that adapts")
+        VStack(alignment: .leading) {
+            Text("Contact information")
                 .font(.headline)
-            
-            Text("Custom font that scales")
-                .font(.system(size: 17, weight: .regular, design: .default))
-                .minimumScaleFactor(0.8)
-                .lineLimit(1)
+                .accessibilityAddTraits(.isHeader)
+            TextField("Name", text: $name)
+            TextField("Phone", text: $phone)
         }
-        .padding()
+        .accessibilityElement(children: .contain)
     }
 }
 ```
 
-### Example 3: Accessible Form in UIKit
+Each field remains independently editable and focusable.
 
-**User Prompt:** "Create an accessible login form in UIKit with VoiceOver support."
+## Dynamic Type
 
-**Expected Output:**
-```swift
-import UIKit
+- Prefer semantic fonts such as `.body`, `.headline`, and `.title`.
+- For a custom face, use `Font.custom(_:size:relativeTo:)` in SwiftUI or `UIFontMetrics` in UIKit.
+- Let user content wrap. Avoid fixed heights, single-line limits, and `minimumScaleFactor` as substitutes for layout that supports large text.
+- Use `@ScaledMetric(relativeTo:)` for icons, spacing, or custom controls that should grow with a text style.
+- At accessibility sizes, switch layout when needed—for example, place trailing actions below labels instead of squeezing them horizontally.
 
-class LoginViewController: UIViewController {
-    let emailTextField = UITextField()
-    let passwordTextField = UITextField()
-    let loginButton = UIButton(type: .system)
-    
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        
-        // Email field
-        emailTextField.placeholder = "Email"
-        emailTextField.keyboardType = .emailAddress
-        emailTextField.accessibilityLabel = "Email address"
-        emailTextField.accessibilityHint = "Enter your email address"
-        
-        // Password field
-        passwordTextField.placeholder = "Password"
-        passwordTextField.isSecureTextEntry = true
-        passwordTextField.accessibilityLabel = "Password"
-        passwordTextField.accessibilityHint = "Enter your password"
-        
-        // Login button
-        loginButton.setTitle("Log In", for: .normal)
-        loginButton.accessibilityHint = "Tap to log in to your account"
-        
-        // Layout code here...
-    }
-}
-```
+See [the Dynamic Type example](examples/example_dynamic_type.swift).
 
-### Example 4: Grouping Elements
+## Motor and input accessibility
 
-**User Prompt:** "How to group related accessibility elements in SwiftUI?"
+- Prefer the platform's standard control sizes. On iOS/iPadOS, aim for the default 44-by-44-point target. If a compact design uses the documented 28-by-28-point minimum, provide sufficient spacing and verify it with real input.
+- Do not require precision, simultaneous gestures, long holds, or motion when a simpler alternative can perform the same task.
+- Give Voice Control users unique, visible names and avoid duplicate control labels.
+- Ensure Switch Control scanning reaches every task and that custom controls expose adjustable or custom actions.
+- Support keyboard focus, activation, dismissal, and visible focus indication on iPad when Full Keyboard Access is relevant.
 
-**Expected Output:**
-```swift
-import SwiftUI
+## Visual, motion, and media access
 
-struct GroupedElementsView: View {
-    var body: some View {
-        VStack {
-            VStack {
-                Text("Contact Information")
-                    .font(.headline)
-                TextField("Name", text: .constant(""))
-                TextField("Phone", text: .constant(""))
-            }
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel("Contact information form")
-            
-            Button("Save Contact") {
-                // Save action
-            }
-            .accessibilityHint("Saves the contact information")
-        }
-        .padding()
-    }
-}
-```
+- Never encode status using color alone; pair it with text, shape, or an icon.
+- Check contrast in every state and appearance, including disabled and selected states.
+- Honor `accessibilityReduceMotion`, `accessibilityReduceTransparency`, `accessibilityDifferentiateWithoutColor`, and `colorSchemeContrast`.
+- Replace large motion or parallax with a meaningful low-motion transition; do not merely shorten a hazardous animation.
+- Caption speech and meaningful sounds in video, provide transcripts for audio, and add audio descriptions when visuals carry essential information.
+- Localize accessibility strings in context. Keep private values out of labels, announcements, logs, and screenshots.
 
-### Example 5: Color Contrast and Alternative Text
+## Cognitive accessibility and Assistive Access
 
-**User Prompt:** "Ensure good color contrast and provide alternatives for color-dependent information."
+- Keep pathways short, labels literal, decisions limited, and destructive operations recoverable.
+- Pair symbols with clear text and keep navigation consistent.
+- For iOS 26+, consider a dedicated `AssistiveAccess` scene only when the app benefits from a distilled experience. Add the required Info.plist support and test the entire scene on device.
+- On iOS 18+, `accessibilityAssistiveAccessEnabled` can adapt an existing view, but it is not a substitute for designing the simplified flow.
 
-**Expected Output:**
-```swift
-import SwiftUI
+## Copy-ready examples
 
-struct ColorAccessibleView: View {
-    @State private var isSelected = false
-    
-    var body: some View {
-        VStack {
-            // Good contrast example
-            Text("Important Message")
-                .foregroundColor(.white)
-                .background(Color.black)
-                .padding()
-            
-            // Color + shape indicator
-            HStack {
-                Circle()
-                    .fill(isSelected ? Color.green : Color.red)
-                    .frame(width: 20, height: 20)
-                Text(isSelected ? "Online" : "Offline")
-            }
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel(isSelected ? "Status: Online" : "Status: Offline")
-            
-            Button(action: { isSelected.toggle() }) {
-                Text("Toggle Status")
-            }
-            .accessibilityHint("Changes the online status indicator")
-        }
-    }
-}
-```
+- [Semantic VoiceOver button](examples/example_voiceover.swift)
+- [Dynamic Type layout](examples/example_dynamic_type.swift)
+- [Accessibility review prompts](examples/prompts.md)
+
+Every recommendation must state relevant availability and include a fallback when the deployment target predates the API.

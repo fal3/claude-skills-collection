@@ -1,0 +1,4 @@
+interface:
+  display_name: "Swift Performance Optimization"
+  short_description: "Measure and improve Swift app performance"
+  default_prompt: "Use $swift-performance-optimization-skill to measure and optimize this Swift code."

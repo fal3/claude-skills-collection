@@ -1,21 +1,16 @@
 import SwiftUI
 
-struct AccessibleButtonView: View {
+struct VoiceOverExample: View {
+    @State private var isFavorite = false
+
     var body: some View {
-        VStack {
-            Button(action: {
-                // Action
-            }) {
-                Image(systemName: "star.fill")
-                    .font(.largeTitle)
-            }
-            .accessibilityLabel("Favorite this item")
-            .accessibilityHint("Double tap to add to favorites")
-            
-            Button("Submit", action: {
-                // Submit action
-            })
-            .accessibilityHint("This will send your information")
+        Button {
+            isFavorite.toggle()
+        } label: {
+            Image(systemName: isFavorite ? "star.fill" : "star")
+                .font(.largeTitle)
         }
+        .accessibilityLabel(isFavorite ? "Remove from Favorites" : "Add to Favorites")
+        .accessibilityValue(isFavorite ? "Favorite" : "Not favorite")
     }
 }

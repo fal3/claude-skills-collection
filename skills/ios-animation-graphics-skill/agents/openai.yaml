@@ -1,0 +1,4 @@
+interface:
+  display_name: "iOS Animation & Graphics"
+  short_description: "Build efficient, accessible Apple animations"
+  default_prompt: "Use $ios-animation-graphics-skill to implement and verify this animation."

@@ -1,16 +1,18 @@
-# Example Prompts for iOS Animation Graphics Skill
+# Example prompts
 
-## Prompt 1: Basic SwiftUI Animations
-"Create a button that scales and changes color when tapped using SwiftUI animations."
+## Should activate
 
-## Prompt 2: SwiftUI Canvas
-"Draw a custom animated waveform using SwiftUI Canvas."
+- "Animate this SwiftUI state change and provide a Reduce Motion alternative."
+- "Draw a continuously moving waveform with Canvas without using a timer."
+- "Use PhaseAnimator on iOS 17 and provide an iOS 16 fallback."
+- "Build a KeyframeAnimator sequence for this onboarding illustration."
+- "Fix this UIViewRepresentable border that disappears after layout."
+- "Integrate a Lottie 4 animation with declarative playback state."
+- "Pause this particle effect offscreen and when Reduce Motion is enabled."
+- "Profile why this animation drops frames on older supported devices."
 
-## Prompt 3: Lottie Integration
-"Integrate a Lottie animation that plays on button tap."
+## Should not activate
 
-## Prompt 4: Core Animation
-"Create a UIViewRepresentable that uses Core Animation for a rotating gradient border."
-
-## Prompt 5: Matched Geometry
-"Implement a hero transition between two views using SwiftUI's matchedGeometryEffect."
+- "Build a SpriteKit or Metal game loop."
+- "Compose and export an offline video."
+- "Retouch this still image."

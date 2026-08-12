@@ -1,16 +1,19 @@
-# Example Prompts for Memory Leak Diagnosis Skill
+# Example prompts
 
-## Prompt 1: Fixing Retain Cycles
-"Fix the retain cycle in this network manager that uses a completion handler."
+## Should activate
 
-## Prompt 2: Delegate Pattern
-"Fix the retain cycle between a view controller and its delegate."
+- "This view model's `deinit` never runs after dismissal. Trace the ownership graph."
+- "Memory rises each time I present this screen; design an Allocations generation test."
+- "Explain whether this Task is a leak or only temporary retention."
+- "Fix this delegate cycle and state why weak is safe here."
+- "Review this unowned capture and prove whether its lifetime invariant holds."
+- "Find the producer cleanup missing from this AsyncStream."
+- "Distinguish a bounded image cache from an unbounded memory defect."
+- "Interpret this Memory Graph root path and propose a verification run."
+- "Investigate a jetsam report where Leaks reports nothing."
 
-## Prompt 3: Instruments Usage
-"How do I use Instruments to detect memory leaks in my iOS app?"
+## Should not activate
 
-## Prompt 4: Memory Graph Debugger
-"Use Xcode's Memory Graph Debugger to identify and fix a retain cycle."
-
-## Prompt 5: ARC Concepts
-"Explain and fix ARC-related memory issues in a complex object graph."
+- "Debug a use-after-free crash with no evidence of retained objects."
+- "Explain stack versus heap allocation in general Swift syntax."
+- "Reduce the size of a bounded cache that is behaving as designed."

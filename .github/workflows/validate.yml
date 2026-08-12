@@ -1,0 +1,37 @@
+name: Validate skills
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: macos-26
+    timeout-minutes: 20
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          xcrun swiftc --version
+
+      - name: Validate skill packages
+        run: ruby scripts/validate_skills.rb
+
+      - name: Type-check Swift examples
+        run: bash scripts/typecheck_examples.sh
+
+      - name: Check whitespace
+        run: |
+          empty_tree="$(git hash-object -t tree /dev/null)"
+          git diff --check "$empty_tree" HEAD

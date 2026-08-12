@@ -1,51 +1,93 @@
 import AVFoundation
-import Speech
+import Foundation
 
-/// Example: Audio buffer conversion for SpeechAnalyzer
-/// Converts AVAudioPCMBuffer to the format required by SpeechAnalyzer
-class BufferConverter {
+@available(macOS 26.0, iOS 26.0, visionOS 26.0, tvOS 26.0, *)
+@available(watchOS, unavailable)
+final class AnalyzerBufferConverter: @unchecked Sendable {
+    enum Failure: LocalizedError, Sendable {
+        case converterCreationFailed
+        case outputBufferAllocationFailed
+        case conversionFailed(String)
+
+        var errorDescription: String? {
+            switch self {
+            case .converterCreationFailed:
+                "AVAudioConverter could not convert between the input and analyzer formats."
+            case .outputBufferAllocationFailed:
+                "The converted audio buffer could not be allocated."
+            case .conversionFailed(let message):
+                "Audio conversion failed: \(message)"
+            }
+        }
+    }
+
+    // Safety invariant: every access to converter is serialized by lock.
+    // outputFormat is immutable after initialization. ConverterInput owns each
+    // non-Sendable input buffer for the synchronous conversion call only.
+    private let lock = NSLock()
+    private let outputFormat: AVAudioFormat
     private var converter: AVAudioConverter?
 
-    func convertBuffer(_ buffer: AVAudioPCMBuffer,
-                       to format: AVAudioFormat) throws -> AVAudioPCMBuffer {
-        // Create converter if needed or format changed
-        if converter == nil || converter?.outputFormat != format {
-            converter = AVAudioConverter(from: buffer.format, to: format)
-            // CRITICAL: Prevents timestamp drift
+    init(outputFormat: AVAudioFormat) {
+        self.outputFormat = outputFormat
+    }
+
+    func convert(_ inputBuffer: AVAudioPCMBuffer) throws -> AVAudioPCMBuffer {
+        lock.lock()
+        defer { lock.unlock() }
+
+        if converter == nil
+            || converter?.inputFormat.isEqual(inputBuffer.format) == false
+            || converter?.outputFormat.isEqual(outputFormat) == false {
+            converter = AVAudioConverter(from: inputBuffer.format, to: outputFormat)
             converter?.primeMethod = .none
         }
 
-        guard let converter = converter else {
-            throw ConversionError.converterCreationFailed
+        guard let converter else {
+            throw Failure.converterCreationFailed
         }
 
-        // Calculate output frame capacity
-        let ratio = format.sampleRate / buffer.format.sampleRate
-        let outputFrameCapacity = AVAudioFrameCount(ceil(Double(buffer.frameLength) * ratio))
-
+        let ratio = outputFormat.sampleRate / inputBuffer.format.sampleRate
+        let capacity = max(
+            1,
+            AVAudioFrameCount(ceil(Double(inputBuffer.frameLength) * ratio))
+        )
         guard let outputBuffer = AVAudioPCMBuffer(
-            pcmFormat: format,
-            frameCapacity: outputFrameCapacity
+            pcmFormat: outputFormat,
+            frameCapacity: capacity
         ) else {
-            throw ConversionError.bufferAllocationFailed
+            throw Failure.outputBufferAllocationFailed
         }
 
-        var error: NSError?
-        let status = converter.convert(to: outputBuffer, error: &error) { inPackets, outStatus in
-            outStatus.pointee = .haveData
-            return buffer
+        let source = ConverterInput(buffer: inputBuffer)
+        var conversionError: NSError?
+        let status = converter.convert(
+            to: outputBuffer,
+            error: &conversionError
+        ) { _, inputStatus in
+            guard !source.wasSupplied else {
+                inputStatus.pointee = .noDataNow
+                return nil
+            }
+            source.wasSupplied = true
+            inputStatus.pointee = .haveData
+            return source.buffer
         }
 
-        guard status != .error, error == nil else {
-            throw ConversionError.conversionFailed(error)
+        if status == .error || conversionError != nil {
+            throw Failure.conversionFailed(
+                conversionError?.localizedDescription ?? "Unknown converter error"
+            )
         }
-
         return outputBuffer
     }
 
-    enum ConversionError: Error {
-        case converterCreationFailed
-        case bufferAllocationFailed
-        case conversionFailed(Error?)
+    private final class ConverterInput: @unchecked Sendable {
+        let buffer: AVAudioPCMBuffer
+        var wasSupplied = false
+
+        init(buffer: AVAudioPCMBuffer) {
+            self.buffer = buffer
+        }
     }
 }

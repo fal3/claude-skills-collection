@@ -1,0 +1,4 @@
+interface:
+  display_name: "Swift Concurrency Migration"
+  short_description: "Migrate Swift code to safe concurrency"
+  default_prompt: "Use $swift-concurrency-migration to plan and verify this Swift 6 concurrency migration."

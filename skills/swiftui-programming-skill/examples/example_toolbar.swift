@@ -1,26 +1,21 @@
 import SwiftUI
 
-struct ContentView: View {
+struct ToolbarExample: View {
+    @State private var items = ["Welcome"]
+
     var body: some View {
-        NavigationView {
-            Text("Hello, World!")
-                .navigationTitle("My App")
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarLeading) {
-                        Button(action: {
-                            // Action for leading button
-                        }) {
-                            Image(systemName: "line.horizontal.3")
-                        }
-                    }
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button(action: {
-                            // Action for trailing button
-                        }) {
-                            Image(systemName: "plus")
-                        }
+        NavigationStack {
+            List(items, id: \.self) { item in
+                Text(item)
+            }
+            .navigationTitle("Notes")
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button("Add note", systemImage: "plus") {
+                        items.append("Note \(items.count)")
                     }
                 }
+            }
         }
     }
 }
