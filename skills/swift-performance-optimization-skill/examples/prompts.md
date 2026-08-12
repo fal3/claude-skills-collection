@@ -1,16 +1,16 @@
-# Example Prompts for Swift Performance Optimization Skill
+# Prompt scenarios
 
-## Prompt 1: List Optimization
-"How can I optimize a SwiftUI List with many items that's scrolling slowly?"
+## Should activate
 
-## Prompt 2: Memory Management
-"Fix a potential memory leak in a closure capturing self."
+- "Design a reproducible Time Profiler experiment for this launch regression."
+- "Audit this repeating timer for lifetime, cancellation, and retain-cycle hazards."
+- "Compare `List` and `LazyVStack` for this interaction using measured traces rather than assumptions."
+- "Downsample remote thumbnails safely in reusable collection-view cells."
+- "Add signposts and a percentile regression threshold for this image pipeline."
+- "Investigate SwiftUI hitches without assuming every `body` evaluation redraws the subtree."
 
-## Prompt 3: Instruments Usage
-"How do I use Instruments to profile CPU performance in my Swift app?"
+## Should not activate
 
-## Prompt 4: Image Loading
-"Optimize image loading and display in a collection view."
-
-## Prompt 5: SwiftUI Rendering
-"Optimize SwiftUI view updates to prevent unnecessary re-renders."
+- "Micro-optimize this unmeasured helper because it looks slow."
+- "Fix this incorrect total when there is no performance symptom."
+- "Restyle this animation without a frame-rate or energy regression."

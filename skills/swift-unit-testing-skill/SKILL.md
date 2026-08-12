@@ -1,573 +1,147 @@
 ---
 name: Swift Unit Testing Skill
-description: Guidelines and templates for writing effective unit tests with XCTest, including test-driven development practices and mocking techniques.
-version: 1.0
-activation: Activate for queries on Swift unit testing, XCTest framework, test-driven development, mocking, or testing best practices.
+description: >-
+  Design, write, migrate, and review Swift unit and integration tests using Swift Testing by default, with XCTest retained for UI automation, performance metrics, Objective-C interoperability, and legacy suites. Use for @Test, #expect, #require, parameterized tests, async tests, dependency injection, mocks/fakes, test plans, XCTest, XCUITest, TDD, flaky tests, and test architecture. Do not use UI-test polling or XCTest subclasses for ordinary new Swift unit tests, and do not introduce third-party snapshot frameworks unless the user requests one.
 ---
 
-# Swift Unit Testing Skill
+# Swift Unit Testing
 
-This skill provides comprehensive guidance on writing effective unit tests using Apple's XCTest framework. It covers test-driven development (TDD), testing patterns, mocking strategies, and best practices for maintaining high-quality test suites.
+Build deterministic tests around observable behavior. Prefer Swift Testing for new Swift unit and integration tests; choose XCTest only where it still provides the required runner or API.
 
-## Best Practices
+## Compatibility baseline
 
-1. **Test First**: Follow TDD principles - write tests before implementation.
+- Swift Testing requires Swift 6 / Xcode 16 or newer. It supports Apple platforms, Linux, and Windows.
+- XCTest remains appropriate for `XCUIApplication`, `XCTMetric`, Objective-C tests, and incremental maintenance of existing XCTest suites.
+- Swift Testing and XCTest can coexist in one test target. Do not mix `@Test` methods into an `XCTestCase` subclass.
+- State the app's actual deployment targets and CI Xcode version before recommending availability-sensitive traits or APIs.
+- Treat APIs first introduced after the installed SDK as future-cycle features and gate them explicitly.
 
-2. **Single Responsibility**: Each test should verify one specific behavior.
+## Select the test layer
 
-3. **Arrange-Act-Assert**: Structure tests clearly with setup, execution, and verification phases.
+| Goal | Default |
+| --- | --- |
+| Pure Swift unit or integration behavior | Swift Testing |
+| Async/throws, parameterized cases, traits, tags | Swift Testing |
+| UIKit/SwiftUI end-to-end interaction | XCTest UI testing |
+| Runtime, CPU, memory, launch, or signpost metrics | XCTest performance APIs |
+| Objective-C test code or legacy suite | XCTest |
 
-4. **Descriptive Names**: Use descriptive test method names that explain what is being tested.
+Do not replace a unit test with a UI test. Keep network, database, clock, randomness, and notification boundaries injectable so unit tests remain fast and deterministic.
 
-5. **Independent Tests**: Tests should not depend on each other or shared state.
+## Workflow
 
-6. **Fast Execution**: Keep tests fast to encourage frequent running.
+1. Identify the behavior and public boundary under test.
+2. List failure cases, cancellation behavior, and state transitions before writing assertions.
+3. Inject dependencies through small capability protocols or closures. Prefer a semantic transport protocol over subclassing framework classes.
+4. Write a failing test, implement the smallest behavior, then refactor.
+5. Run the narrow test, its containing suite, and then the affected test plan.
+6. Check parallel safety: avoid mutable globals, shared files, fixed ports, real sleeps, and order dependence.
+7. Confirm the test fails when the production behavior is deliberately broken.
 
-## Unit Testing Guidelines
+## Swift Testing defaults
 
-- Test public interfaces, not implementation details.
-- Use mocking for external dependencies.
-- Cover both happy path and edge cases.
-- Include tests for error conditions.
-- Maintain test code quality equal to production code.
-- Run tests frequently during development.
+Use `#expect` for nonfatal checks and `try #require` when later assertions need a value. Test asynchronous functions directly:
 
-## Examples
-
-### Example 1: Basic XCTest Structure
-
-**User Prompt:** "Create a basic unit test class with setup and teardown methods."
-
-**Expected Output:**
 ```swift
-import XCTest
+import Testing
 @testable import MyApp
 
-class CalculatorTests: XCTestCase {
-    
-    var calculator: Calculator!
-    
-    override func setUp() {
-        super.setUp()
-        calculator = Calculator()
-    }
-    
-    override func tearDown() {
-        calculator = nil
-        super.tearDown()
-    }
-    
-    func testAddition() {
-        // Given
-        let a = 5
-        let b = 3
-        
-        // When
-        let result = calculator.add(a, b)
-        
-        // Then
-        XCTAssertEqual(result, 8, "Addition should return the sum of two numbers")
-    }
-    
-    func testAdditionWithNegativeNumbers() {
-        // Given
-        let a = 5
-        let b = -3
-        
-        // When
-        let result = calculator.add(a, b)
-        
-        // Then
-        XCTAssertEqual(result, 2, "Addition should work with negative numbers")
-    }
-    
-    func testDivisionByZero() {
-        // Given
-        let a = 10
-        let b = 0
-        
-        // When & Then
-        XCTAssertThrowsError(try calculator.divide(a, b)) { error in
-            XCTAssertEqual(error as? CalculatorError, CalculatorError.divisionByZero)
-        }
-    }
-}
-
-// Production code
-class Calculator {
-    func add(_ a: Int, _ b: Int) -> Int {
-        return a + b
-    }
-    
-    func divide(_ a: Int, _ b: Int) throws -> Int {
-        guard b != 0 else {
-            throw CalculatorError.divisionByZero
-        }
-        return a / b
-    }
-}
-
-enum CalculatorError: Error {
-    case divisionByZero
+@Test("The profile includes the requested user")
+func profileLookup() async throws {
+    let profile = try await ProfileStore.preview.profile(id: 42)
+    #expect(profile.id == 42)
+    #expect(!profile.displayName.isEmpty)
 }
 ```
 
-### Example 2: Testing Asynchronous Code
+Prefer parameterized tests to copied methods:
 
-**User Prompt:** "How do I write unit tests for asynchronous functions using expectations?"
-
-**Expected Output:**
 ```swift
-import XCTest
-@testable import MyApp
-
-class NetworkServiceTests: XCTestCase {
-    
-    var networkService: NetworkService!
-    var mockURLSession: MockURLSession!
-    
-    override func setUp() {
-        super.setUp()
-        mockURLSession = MockURLSession()
-        networkService = NetworkService(session: mockURLSession)
-    }
-    
-    override func tearDown() {
-        networkService = nil
-        mockURLSession = nil
-        super.tearDown()
-    }
-    
-    func testFetchDataSuccess() {
-        // Given
-        let expectation = expectation(description: "Fetch data completes")
-        let expectedData = "Hello, World!".data(using: .utf8)!
-        mockURLSession.data = expectedData
-        mockURLSession.response = HTTPURLResponse(url: URL(string: "https://example.com")!,
-                                                 statusCode: 200,
-                                                 httpVersion: nil,
-                                                 headerFields: nil)
-        
-        // When
-        networkService.fetchData(from: URL(string: "https://example.com")!) { result in
-            // Then
-            switch result {
-            case .success(let data):
-                XCTAssertEqual(data, expectedData)
-            case .failure:
-                XCTFail("Expected success but got failure")
-            }
-            expectation.fulfill()
-        }
-        
-        wait(for: [expectation], timeout: 1.0)
-    }
-    
-    func testFetchDataFailure() {
-        // Given
-        let expectation = expectation(description: "Fetch data fails")
-        let expectedError = URLError(.notConnectedToInternet)
-        mockURLSession.error = expectedError
-        
-        // When
-        networkService.fetchData(from: URL(string: "https://example.com")!) { result in
-            // Then
-            switch result {
-            case .success:
-                XCTFail("Expected failure but got success")
-            case .failure(let error):
-                XCTAssertEqual((error as? URLError)?.code, .notConnectedToInternet)
-            }
-            expectation.fulfill()
-        }
-        
-        wait(for: [expectation], timeout: 1.0)
-    }
-    
-    // Modern async/await testing (iOS 15+)
-    @available(iOS 15.0, *)
-    func testFetchDataAsync() async throws {
-        // Given
-        let expectedData = "Hello, World!".data(using: .utf8)!
-        mockURLSession.data = expectedData
-        mockURLSession.response = HTTPURLResponse(url: URL(string: "https://example.com")!,
-                                                 statusCode: 200,
-                                                 httpVersion: nil,
-                                                 headerFields: nil)
-        
-        // When
-        let data = try await networkService.fetchDataAsync(from: URL(string: "https://example.com")!)
-        
-        // Then
-        XCTAssertEqual(data, expectedData)
-    }
-}
-
-// Mock classes
-class MockURLSession: URLSession {
-    var data: Data?
-    var response: URLResponse?
-    var error: Error?
-    
-    override func dataTask(with url: URL, completionHandler: @escaping (Data?, URLResponse?, Error?) -> Void) -> URLSessionDataTask {
-        let task = MockURLSessionDataTask()
-        task.completionHandler = {
-            completionHandler(self.data, self.response, self.error)
-        }
-        return task
-    }
-}
-
-class MockURLSessionDataTask: URLSessionDataTask {
-    var completionHandler: (() -> Void)?
-    
-    override func resume() {
-        completionHandler?()
-    }
-}
-
-// Production code
-class NetworkService {
-    private let session: URLSession
-    
-    init(session: URLSession = .shared) {
-        self.session = session
-    }
-    
-    func fetchData(from url: URL, completion: @escaping (Result<Data, Error>) -> Void) {
-        session.dataTask(with: url) { data, response, error in
-            if let error = error {
-                completion(.failure(error))
-            } else if let data = data {
-                completion(.success(data))
-            }
-        }.resume()
-    }
-    
-    @available(iOS 15.0, *)
-    func fetchDataAsync(from url: URL) async throws -> Data {
-        let (data, _) = try await session.data(from: url)
-        return data
-    }
+@Test(arguments: [0, 1, 12, 99])
+func roundTrip(_ value: Int) throws {
+    #expect(try Codec.decode(Codec.encode(value)) == value)
 }
 ```
 
-### Example 3: Mocking with Protocols
+Use `#expect(throws:)` for failures and `confirmation` for callback counts. Convert one-shot callbacks to checked continuations when that mirrors the production abstraction. Never make an async mock call synchronously merely to simplify a test.
 
-**User Prompt:** "Create unit tests with protocol-based mocking for dependency injection."
+Read [examples/example_basic_test.swift](examples/example_basic_test.swift) for standalone Swift Testing structure and parameterization. Read [examples/example_async_test.swift](examples/example_async_test.swift) for a strict-concurrency-safe async HTTP boundary.
 
-**Expected Output:**
+## Dependency doubles
+
+Choose the smallest double that proves behavior:
+
+- Stub: returns configured data.
+- Spy: records messages for later assertions.
+- Fake: implements a lightweight in-memory behavior.
+- Mock: verifies a specific interaction contract; use sparingly.
+
+Do not subclass `URLSession`, `URLSessionDataTask`, or other framework classes just to override one method. Their async convenience methods are not required to dispatch through callback overrides. Inject an `HTTPTransport` with an async requirement, or use a custom `URLProtocol` with an ephemeral session when URL loading itself is the subject.
+
+Always complete every callback path exactly once. Validate malformed responses and HTTP status codes instead of treating every non-nil body as success.
+
+## XCTest-specific work
+
+### UI automation
+
+- Assign stable semantic identifiers in production views, such as `login.username` and `login.success`; do not query localized display text.
+- Wait for state transitions with `waitForExistence(timeout:)` or an `NSPredicate` expectation.
+- Set launch arguments and environment before `launch()` to make the backend and account state deterministic.
+- Mark UI tests `@MainActor` where required by the active SDK.
+
 ```swift
-import XCTest
-@testable import MyApp
-
-class UserManagerTests: XCTestCase {
-    
-    var userManager: UserManager!
-    var mockUserService: MockUserService!
-    var mockNotificationCenter: MockNotificationCenter!
-    
-    override func setUp() {
-        super.setUp()
-        mockUserService = MockUserService()
-        mockNotificationCenter = MockNotificationCenter()
-        userManager = UserManager(userService: mockUserService,
-                                notificationCenter: mockNotificationCenter)
-    }
-    
-    override func tearDown() {
-        userManager = nil
-        mockUserService = nil
-        mockNotificationCenter = nil
-        super.tearDown()
-    }
-    
-    func testLoginSuccess() {
-        // Given
-        let user = User(id: 1, name: "John Doe")
-        mockUserService.loginResult = .success(user)
-        
-        // When
-        userManager.login(username: "john", password: "password") { result in
-            // Then
-            switch result {
-            case .success(let loggedInUser):
-                XCTAssertEqual(loggedInUser.id, user.id)
-                XCTAssertEqual(loggedInUser.name, user.name)
-                XCTAssertTrue(self.mockNotificationCenter.postCalled)
-            case .failure:
-                XCTFail("Expected success but got failure")
-            }
-        }
-    }
-    
-    func testLoginFailure() {
-        // Given
-        mockUserService.loginResult = .failure(UserServiceError.invalidCredentials)
-        
-        // When
-        userManager.login(username: "john", password: "wrong") { result in
-            // Then
-            switch result {
-            case .success:
-                XCTFail("Expected failure but got success")
-            case .failure(let error):
-                XCTAssertEqual(error as? UserServiceError, .invalidCredentials)
-                XCTAssertFalse(self.mockNotificationCenter.postCalled)
-            }
-        }
-    }
-    
-    func testLogout() {
-        // When
-        userManager.logout()
-        
-        // Then
-        XCTAssertTrue(mockUserService.logoutCalled)
-        XCTAssertTrue(mockNotificationCenter.postCalled)
-    }
-}
-
-// Mock implementations
-class MockUserService: UserServiceProtocol {
-    var loginResult: Result<User, Error>?
-    var logoutCalled = false
-    
-    func login(username: String, password: String, completion: @escaping (Result<User, Error>) -> Void) {
-        if let result = loginResult {
-            completion(result)
-        }
-    }
-    
-    func logout() {
-        logoutCalled = true
-    }
-}
-
-class MockNotificationCenter: NotificationCenterProtocol {
-    var postCalled = false
-    
-    func post(name: Notification.Name, object: Any?) {
-        postCalled = true
-    }
-}
-
-// Protocols
-protocol UserServiceProtocol {
-    func login(username: String, password: String, completion: @escaping (Result<User, Error>) -> Void)
-    func logout()
-}
-
-protocol NotificationCenterProtocol {
-    func post(name: Notification.Name, object: Any?)
-}
-
-// Production code
-class UserManager {
-    private let userService: UserServiceProtocol
-    private let notificationCenter: NotificationCenterProtocol
-    
-    init(userService: UserServiceProtocol, notificationCenter: NotificationCenterProtocol) {
-        self.userService = userService
-        self.notificationCenter = notificationCenter
-    }
-    
-    func login(username: String, password: String, completion: @escaping (Result<User, Error>) -> Void) {
-        userService.login(username: username, password: password) { [weak self] result in
-            if case .success = result {
-                self?.notificationCenter.post(name: .userDidLogin, object: nil)
-            }
-            completion(result)
-        }
-    }
-    
-    func logout() {
-        userService.logout()
-        notificationCenter.post(name: .userDidLogout, object: nil)
-    }
-}
-
-struct User {
-    let id: Int
-    let name: String
-}
-
-enum UserServiceError: Error {
-    case invalidCredentials
-    case networkError
-}
-
-extension Notification.Name {
-    static let userDidLogin = Notification.Name("userDidLogin")
-    static let userDidLogout = Notification.Name("userDidLogout")
-}
-```
-
-### Example 4: Performance Testing
-
-**User Prompt:** "Write a performance test to ensure a function executes within acceptable time limits."
-
-**Expected Output:**
-```swift
-import XCTest
-@testable import MyApp
-
-class PerformanceTests: XCTestCase {
-    
-    var dataProcessor: DataProcessor!
-    
-    override func setUp() {
-        super.setUp()
-        dataProcessor = DataProcessor()
-    }
-    
-    override func tearDown() {
-        dataProcessor = nil
-        super.tearDown()
-    }
-    
-    func testDataProcessingPerformance() {
-        // Given
-        let largeDataset = Array(1...10000)
-        
-        // When & Then
-        measure {
-            _ = dataProcessor.process(data: largeDataset)
-        }
-    }
-    
-    func testDataProcessingPerformanceWithMetrics() {
-        // Given
-        let largeDataset = Array(1...10000)
-        
-        // When & Then
-        measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTMemoryMetric()]) {
-            _ = dataProcessor.process(data: largeDataset)
-        }
-    }
-    
-    func testDataProcessingDoesNotExceedTimeLimit() {
-        // Given
-        let largeDataset = Array(1...10000)
-        let maximumAllowedTime: TimeInterval = 0.1 // 100ms
-        
-        // When
-        let startTime = Date()
-        let result = dataProcessor.process(data: largeDataset)
-        let elapsedTime = Date().timeIntervalSince(startTime)
-        
-        // Then
-        XCTAssertLessThan(elapsedTime, maximumAllowedTime,
-                         "Data processing took \(elapsedTime) seconds, which exceeds the limit of \(maximumAllowedTime) seconds")
-        XCTAssertFalse(result.isEmpty)
-    }
-}
-
-// Production code
-class DataProcessor {
-    func process(data: [Int]) -> [Int] {
-        // Simulate some processing work
-        return data.map { $0 * 2 }.filter { $0 > 100 }
-    }
-}
-```
-
-### Example 5: UI Testing Basics
-
-**User Prompt:** "Create a basic UI test for a SwiftUI view with a button and text field."
-
-**Expected Output:**
-```swift
-import XCTest
-
-class MyAppUITests: XCTestCase {
-    
-    var app: XCUIApplication!
-    
-    override func setUp() {
-        super.setUp()
-        continueAfterFailure = false
-        app = XCUIApplication()
+final class LoginUITests: XCTestCase {
+    @MainActor
+    func testSuccessfulLogin() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-use-stub-auth"]
         app.launch()
-    }
-    
-    override func tearDown() {
-        app = nil
-        super.tearDown()
-    }
-    
-    func testLoginFlow() {
-        // Given
-        let usernameField = app.textFields["Username"]
-        let passwordField = app.secureTextFields["Password"]
-        let loginButton = app.buttons["Login"]
-        let welcomeMessage = app.staticTexts["Welcome!"]
-        
-        // When
-        usernameField.tap()
-        usernameField.typeText("testuser")
-        
-        passwordField.tap()
-        passwordField.typeText("password123")
-        
-        loginButton.tap()
-        
-        // Then
-        XCTAssertTrue(welcomeMessage.exists, "Welcome message should appear after successful login")
-    }
-    
-    func testLoginValidation() {
-        // Given
-        let loginButton = app.buttons["Login"]
-        let errorMessage = app.staticTexts["Please enter username and password"]
-        
-        // When
-        loginButton.tap()
-        
-        // Then
-        XCTAssertTrue(errorMessage.exists, "Error message should appear when trying to login without credentials")
-    }
-    
-    func testNavigation() {
-        // Given
-        let settingsButton = app.buttons["Settings"]
-        let backButton = app.navigationBars.buttons["Back"]
-        
-        // When
-        settingsButton.tap()
-        
-        // Then
-        XCTAssertTrue(app.navigationBars["Settings"].exists, "Settings screen should be displayed")
-        
-        // When
-        backButton.tap()
-        
-        // Then
-        XCTAssertTrue(app.navigationBars["Home"].exists, "Should navigate back to home screen")
+
+        app.textFields["login.username"].tap()
+        app.textFields["login.username"].typeText("sample")
+        app.buttons["login.submit"].tap()
+
+        XCTAssertTrue(app.staticTexts["login.success"].waitForExistence(timeout: 2))
     }
 }
 ```
 
-Note: UI tests require setting up accessibility identifiers in your SwiftUI views:
+### Performance
+
+Use XCTest metrics and baselines instead of a one-shot `Date` threshold. Keep setup outside `measure` unless setup is intentionally measured.
 
 ```swift
-struct LoginView: View {
-    @State private var username = ""
-    @State private var password = ""
-    
-    var body: some View {
-        VStack {
-            TextField("Username", text: $username)
-                .accessibility(identifier: "Username")
-            
-            SecureField("Password", text: $password)
-                .accessibility(identifier: "Password")
-            
-            Button("Login") {
-                // Login logic
-            }
-            .accessibility(identifier: "Login")
-        }
-    }
+measure(metrics: [XCTClockMetric(), XCTCPUMetric(), XCTMemoryMetric()]) {
+    _ = processor.process(fixture)
 }
 ```
+
+Record the build configuration, device class, and baseline environment. Do not compare absolute timings across dissimilar CI workers.
+
+## Swift concurrency rules
+
+- Let Swift Testing run independent tests in parallel; use `.serialized` only for unavoidable shared external state.
+- Prefer actors or immutable `Sendable` values in doubles used across tasks.
+- Inject a clock rather than sleeping. Drive the test clock explicitly.
+- Verify cancellation and cleanup, not only successful completion.
+- Do not silence Sendable diagnostics with `@unchecked Sendable` unless the type has a documented synchronization invariant.
+
+## Review checklist
+
+- The test imports the production module or clearly labels a standalone teaching fixture; it never redeclares an imported production type.
+- The assertion checks behavior, not an implementation detail.
+- Every asynchronous path is awaited and bounded by the test runner.
+- No real network, wall-clock sleep, shared account, or random order controls the result.
+- Failure, empty-response, malformed-response, and cancellation paths are covered where applicable.
+- UI queries use identifiers and explicit waits.
+- Performance tests use metrics and baselines.
+- Availability and CI toolchain requirements are stated.
+
+## Supporting material
+
+- [README.md](README.md) summarizes framework selection and minimum tools.
+- [examples/example_basic_test.swift](examples/example_basic_test.swift) is a dependency-free Swift Testing example.
+- [examples/example_async_test.swift](examples/example_async_test.swift) demonstrates async transport injection without `URLSession` subclassing.
+- [examples/prompts.md](examples/prompts.md) contains realistic activation prompts.
+
+When adapting an example to an app, move the sample system-under-test declaration into the production target and replace it in the test target with `@testable import AppModule`.

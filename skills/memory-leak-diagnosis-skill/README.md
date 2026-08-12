@@ -1,32 +1,24 @@
 # Memory Leak Diagnosis Skill
 
-This skill provides expertise in identifying, diagnosing, and fixing memory leaks and retain cycles in Swift applications using Instruments and ARC best practices.
+Use this skill when a Swift object does not deallocate, memory grows across repeated workflows, a cache appears unbounded, or an app is terminated under memory pressure.
 
-## Activation
+## Diagnostic model
 
-This skill activates automatically for queries related to:
-- Memory leaks and retain cycles
-- Instruments Leaks and Allocations usage
-- ARC (Automatic Reference Counting) concepts
-- Weak and unowned references
-- Memory Graph Debugger analysis
-- Reference counting issues
+1. Define the expected lifetime.
+2. Reproduce a bounded lifecycle and add temporary `deinit` probes.
+3. Follow incoming strong paths in Xcode Memory Graph.
+4. Compare repeated generations in Instruments Allocations.
+5. Use Leaks for unreachable allocations and VM Tracker for non-object footprint.
+6. Fix the ownership/cancellation contract and repeat the same measurement.
 
-## Setup
+Do not enable Zombies during leak or footprint measurement. Zombies are for use-after-free diagnosis and intentionally keep deallocated objects resident.
 
-To use this skill effectively:
+## Included material
 
-1. Enable zombies in your scheme for debugging (Edit Scheme > Run > Diagnostics > Memory Management)
-2. Use Product > Profile to access Instruments tools
-3. Familiarize yourself with weak/unowned keywords and capture lists
-4. Learn to interpret memory graphs and reference cycles
+- `examples/example_retain_cycle.swift`: correct stored-closure, delegate, bidirectional, value-container, and task-lifetime graphs.
+- `examples/example_instruments_leaks.md`: repeatable Memory Graph, Allocations, Leaks, and verification steps.
+- `examples/prompts.md`: representative requests.
 
-## Examples
+Weak is appropriate when the referenced object may die first. Unowned is appropriate only when a real lifetime invariant guarantees the object is alive at every access. Value types can still carry closures or references that participate in a cycle.
 
-See the `examples/` directory for sample code and prompts demonstrating memory leak diagnosis and fixes.
-
-## Resources
-
-- [Memory Management in Swift](https://docs.swift.org/swift-book/LanguageGuide/AutomaticReferenceCounting.html)
-- [Instruments User Guide](https://developer.apple.com/library/archive/documentation/DeveloperTools/Conceptual/InstrumentsUserGuide/)
-- [Debugging Memory Issues](https://developer.apple.com/library/archive/documentation/Performance/Conceptual/ManagingMemory/)
+Resources: [Automatic Reference Counting](https://docs.swift.org/swift-book/documentation/the-swift-programming-language/automaticreferencecounting/), [Gathering information about memory use](https://developer.apple.com/documentation/xcode/gathering-information-about-memory-use), and [Making changes to reduce memory use](https://developer.apple.com/documentation/xcode/making-changes-to-reduce-memory-use).

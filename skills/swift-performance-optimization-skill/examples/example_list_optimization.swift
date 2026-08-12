@@ -1,43 +1,42 @@
 import SwiftUI
 
-struct OptimizedListView: View {
-    let items = Array(1...10000) // Large dataset
-    
+struct PerformanceItem: Identifiable, Sendable {
+    let id: Int
+    let title: String
+}
+
+struct MeasuredListExample: View {
+    let items: [PerformanceItem]
+
     var body: some View {
-        List(items, id: \.self) { item in
-            OptimizedRowView(item: item)
+        List(items) { item in
+            HStack {
+                Text(item.title)
+                Spacer()
+                Image(systemName: "star")
+                    .foregroundStyle(.yellow)
+                    .accessibilityHidden(true)
+            }
         }
         .listStyle(.plain)
     }
 }
 
-struct OptimizedRowView: View {
-    let item: Int
-    
-    var body: some View {
-        HStack {
-            Text("Item \(item)")
-            Spacer()
-            Image(systemName: "star")
-                .foregroundColor(.yellow)
-        }
-        .padding(.vertical, 8)
-        // Avoid complex computations in body
-        // Use @StateObject for view models if needed
-    }
-}
+// List already realizes rows lazily. Choose this variant when custom scrolling
+// behavior or styling requires it, then profile both versions for the real data.
+struct CustomScrollingExample: View {
+    let items: [PerformanceItem]
 
-// For even better performance with large datasets:
-struct LazyOptimizedListView: View {
-    let items = Array(1...10000)
-    
     var body: some View {
         ScrollView {
-            LazyVStack {
-                ForEach(items, id: \.self) { item in
-                    OptimizedRowView(item: item)
+            LazyVStack(alignment: .leading) {
+                ForEach(items) { item in
+                    Text(item.title)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, 8)
                 }
             }
+            .padding(.horizontal)
         }
     }
 }

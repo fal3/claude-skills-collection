@@ -1,0 +1,4 @@
+interface:
+  display_name: "SpeechAnalyzer Expert"
+  short_description: "Build on-device SpeechAnalyzer transcription"
+  default_prompt: "Use $swift-SpeechAnalyzer-Framework-Expert to implement and verify this transcription flow."

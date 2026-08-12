@@ -1,23 +1,55 @@
-# Claude Skills Collection
+# Swift/iOS Skills Collection (Codex + Claude)
 
-This repository contains a curated collection of Claude Skills organized by professional domain. Each skill provides specialized expertise to help developers build high-quality applications across different platforms and technologies.
+This repository contains a curated collection of reusable skills for Swift and iOS development. The same `skills/*/SKILL.md` content can be used from Codex or Claude-style workflows.
 
 ## TL;DR - Get Started in 10 Seconds
 
-### Claude Code Plugin (Recommended)
+### Codex
+```bash
+# From this repository root
+mkdir -p "$HOME/.agents/skills"
+for skill in "$(pwd)"/skills/*; do
+  [ -d "$skill" ] || continue
+  ln -sfn "$skill" "$HOME/.agents/skills/$(basename "$skill")"
+done
+```
+
+Codex discovers the skills automatically. Type `$` to invoke one explicitly, or describe a matching task and let its `description` trigger it.
+
+### Claude Code Plugin
 ```bash
 # In Claude Code, run:
 /plugin marketplace add https://github.com/fal3/claude-skills-collection
 /plugin install ios-swift-skills
 ```
 
-That's it! All 8 iOS/Swift skills are now available automatically.
-
 ---
 
 ## Installation
 
-### 🔌 Claude Code Plugin (Recommended)
+### Codex
+
+Install via symlink so updates in this repository are picked up immediately:
+
+```bash
+collection_root="/absolute/path/to/claude-skills-collection"
+mkdir -p "$HOME/.agents/skills"
+for skill in "$collection_root"/skills/*; do
+  [ -d "$skill" ] || continue
+  ln -sfn "$skill" "$HOME/.agents/skills/$(basename "$skill")"
+done
+```
+
+Optional: copy instead of symlink:
+
+```bash
+mkdir -p "$HOME/.agents/skills"
+cp -R skills/. "$HOME/.agents/skills/"
+```
+
+For repository-scoped installation, use the same layout under `$REPO_ROOT/.agents/skills`. The repository also includes `.codex-plugin/plugin.json` for universal plugin packaging; publishing it to a public catalog is a separate release step.
+
+### Claude Code Plugin
 
 **Install the plugin:**
 ```bash
@@ -29,30 +61,26 @@ That's it! All 8 iOS/Swift skills are now available automatically.
 ```
 
 **Benefits:**
-- ✅ All skills auto-loaded when relevant
-- ✅ No manual copying or pasting
-- ✅ Updates automatically when you pull changes
-- ✅ Works across all your projects
+- All skills are discoverable when relevant
+- Explicit skill invocation remains available
+- One plugin install exposes the collection
+- The installed plugin can be used across projects
+
+All 12 Swift and Apple platform skills are then available automatically.
 
 ### 🎯 Alternative: Project-Specific Installation
 
-Clone this repo into your project and Claude Code will auto-detect the skills:
+Clone the repository, then install it through the local marketplace or link the individual skill directories into your project's skill location. Keeping the clone outside the project avoids committing a nested repository by accident.
 
 ```bash
-cd your-project/
 git clone https://github.com/fal3/claude-skills-collection.git
-```
-
-Then reference in your project's `CLAUDE.md`:
-```markdown
-Load skills from: ./claude-skills-collection/
 ```
 
 ## Skills Index
 
-All skills are automatically available once you install the plugin. No manual loading required!
+All skills are available once installed in either Codex (`$HOME/.agents/skills` or `$REPO_ROOT/.agents/skills`) or Claude Code (plugin install).
 
-### iOS Development (8 Skills)
+### Swift and Apple Platform Development (12 Skills)
 
 | Skill | Description | Activation Keywords |
 |-------|-------------|---------------------|
@@ -61,24 +89,15 @@ All skills are automatically available once you install the plugin. No manual lo
 | **ios-accessibility-skill** | iOS accessibility best practices | VoiceOver, Dynamic Type, accessibility |
 | **swift-performance-optimization-skill** | Performance optimization techniques | performance, Instruments, optimization |
 | **cross-platform-app-development-skill** | Multi-platform app strategies | multi-platform, iPad, Mac Catalyst |
-| **swift-unit-testing-skill** | XCTest and unit testing patterns | XCTest, unit testing, TDD |
+| **swift-unit-testing-skill** | Swift Testing by default, with XCTest for UI, performance, and legacy suites | Swift Testing, XCTest, unit testing, TDD |
 | **ios-animation-graphics-skill** | SwiftUI animations and graphics | animations, Canvas, Lottie |
 | **memory-leak-diagnosis-skill** | Memory leak detection and fixing | memory leaks, retain cycles, ARC |
+| **swift-SpeechAnalyzer-Framework-Expert** | On-device speech transcription with Apple's modern Speech framework | SpeechAnalyzer, SpeechTranscriber, audio transcription |
+| **swift-concurrency-migration** | Structured migration to Swift 6 data-race safety | Swift 6 migration, Sendable, actor isolation, concurrency diagnostics |
+| **swiftdata-core-data-migrations** | Production-safe SwiftData and Core Data migrations | VersionedSchema, SchemaMigrationPlan, Core Data migration, store upgrade |
+| **app-intents-widgets** | App Intents, App Shortcuts, WidgetKit, and system surfaces | AppIntent, AppEntity, App Shortcuts, widgets, controls |
 
-Each skill includes:
-- 6 key best practices
-- Domain-specific guidelines
-- 3-5 complete code examples
-- Working Swift code snippets
-
-### Web Development
-*Coming soon* - Skills for React, TypeScript, Next.js, and modern web frameworks
-
-### Backend Development
-*Coming soon* - Skills for API design, database optimization, and server architecture
-
-### Data Science & ML
-*Coming soon* - Skills for data analysis, machine learning, and AI integration
+Each skill includes focused best practices, domain-specific guidance, and practical examples or reference implementations.
 
 ---
 
@@ -90,6 +109,9 @@ Once installed, skills activate automatically based on your queries:
 - Mention **memory leaks** → `memory-leak-diagnosis-skill` activates
 - Discuss **accessibility** → `ios-accessibility-skill` engages
 - Talk about **testing** → `swift-unit-testing-skill` helps
+- Ask about **Swift 6 migration errors** → `swift-concurrency-migration` guides the migration
+- Plan a **SwiftData/Core Data store upgrade** → `swiftdata-core-data-migrations` protects existing data
+- Add **App Intents or widgets** → `app-intents-widgets` scopes the system integration
 
 No manual loading required. Just ask your question and the relevant skills provide expertise.
 
@@ -108,9 +130,9 @@ Claude: [ios-animation-graphics-skill activates] I'll show you SwiftUI animation
 
 Each skill provides:
 - Best practices specific to the domain
-- Complete, tested code examples
-- Modern Swift/iOS patterns (Swift 6, iOS 18+)
-- Apple HIG compliance
+- Practical examples or reference implementations
+- Modern Swift/iOS patterns with skill-specific platform requirements
+- Apple platform guidance relevant to the skill
 
 ## Contributing
 
@@ -118,18 +140,18 @@ We welcome contributions! To add or improve skills:
 
 1. Fork this repository
 2. Add your skill in `skills/your-skill-name/SKILL.md`
-3. Follow the skill structure defined in `CLAUDE.md`:
-   - YAML frontmatter with name, description, version, activation
-   - 6 best practices
+3. Follow the skill structure defined in `CLAUDE.md` and `CODEX.md`:
+   - YAML frontmatter with only `name` and a trigger-rich `description`
+   - Focused, domain-specific best practices
    - Domain-specific guidelines
-   - 3-5 complete code examples
+   - Practical examples or reference implementations
 4. Test with Claude Code: `/plugin marketplace add ./your-fork`
 5. Submit a pull request
 
 ### Guidelines
 - Follow Apple's Swift API Design Guidelines
-- Use modern Swift (5.9+) and iOS (17+) features
-- Include working, tested code examples
+- Declare the minimum Swift, Xcode, and platform versions required by the skill
+- Include working, tested examples or reference implementations
 - See [CONTRIBUTING.md](CONTRIBUTING.md) for details
 
 ### Plugin Structure
@@ -141,30 +163,33 @@ claude-skills-collection/
 ├── .claude-plugin/
 │   ├── plugin.json          # Plugin metadata
 │   └── marketplace.json     # Marketplace config
+├── .codex-plugin/
+│   └── plugin.json          # Universal ChatGPT/Codex plugin manifest
 ├── skills/                   # All skills here
 │   ├── swiftui-programming-skill/
 │   │   ├── SKILL.md         # Skill definition
 │   │   ├── README.md        # Documentation
-│   │   └── examples/        # Code examples
+│   │   ├── examples/        # Code examples, when appropriate
+│   │   ├── docs/            # Optional packaged documentation
+│   │   └── references/      # Optional deep-dive material
 │   └── ...
-└── CLAUDE.md               # Repository guidelines
+├── AGENTS.md              # Authoritative Codex repository instructions
+├── CLAUDE.md              # Claude Code repository instructions
+└── CODEX.md               # Cross-tool maintenance reference
 ```
 
 ### Roadmap
 
-**Upcoming Skills:**
-- Core Data and SwiftData patterns
-- iOS Widget development
+**Possible future additions:**
 - ARKit and RealityKit
 - CloudKit integration
-- Web Development (React, TypeScript, Next.js)
-- Backend Development (API design, databases)
-- Data Science & ML (Python, pandas, model training)
+- StoreKit and subscription operations
+- Localization and internationalization workflows
 
 Want to contribute? Open an issue or submit a PR!
 
 ---
 
-**Current Focus:** iOS Development (Swift 5.9+, iOS 17+, Xcode 15+)
+**Current Focus:** iOS development. Minimum Swift, Xcode, and platform versions are documented per skill; some skills require newer APIs such as iOS 26+.
 **License:** MIT
 **Maintained by:** [@fal3](https://github.com/fal3)

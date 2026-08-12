@@ -1,108 +1,86 @@
-import XCTest
-@testable import MyApp
+import Foundation
+import Testing
 
-class NetworkServiceTests: XCTestCase {
-    
-    var networkService: NetworkService!
-    var mockURLSession: MockURLSession!
-    
-    override func setUp() {
-        super.setUp()
-        mockURLSession = MockURLSession()
-        networkService = NetworkService(session: mockURLSession)
-    }
-    
-    override func tearDown() {
-        networkService = nil
-        mockURLSession = nil
-        super.tearDown()
-    }
-    
-    func testFetchDataSuccess() {
-        // Given
-        let expectation = expectation(description: "Fetch data completes")
-        let expectedData = "Hello, World!".data(using: .utf8)!
-        mockURLSession.data = expectedData
-        mockURLSession.response = HTTPURLResponse(url: URL(string: "https://example.com")!,
-                                                 statusCode: 200,
-                                                 httpVersion: nil,
-                                                 headerFields: nil)
-        
-        // When
-        networkService.fetchData(from: URL(string: "https://example.com")!) { result in
-            // Then
-            switch result {
-            case .success(let data):
-                XCTAssertEqual(data, expectedData)
-            case .failure:
-                XCTFail("Expected success but got failure")
-            }
-            expectation.fulfill()
-        }
-        
-        wait(for: [expectation], timeout: 1.0)
-    }
-    
-    func testFetchDataFailure() {
-        // Given
-        let expectation = expectation(description: "Fetch data fails")
-        let expectedError = URLError(.notConnectedToInternet)
-        mockURLSession.error = expectedError
-        
-        // When
-        networkService.fetchData(from: URL(string: "https://example.com")!) { result in
-            // Then
-            switch result {
-            case .success:
-                XCTFail("Expected failure but got success")
-            case .failure(let error):
-                XCTAssertEqual((error as? URLError)?.code, .notConnectedToInternet)
-            }
-            expectation.fulfill()
-        }
-        
-        wait(for: [expectation], timeout: 1.0)
-    }
+struct HTTPResponse: Equatable, Sendable {
+    let data: Data
+    let statusCode: Int
 }
 
-// Mock classes
-class MockURLSession: URLSession {
-    var data: Data?
-    var response: URLResponse?
-    var error: Error?
-    
-    override func dataTask(with url: URL, completionHandler: @escaping (Data?, URLResponse?, Error?) -> Void) -> URLSessionDataTask {
-        let task = MockURLSessionDataTask()
-        task.completionHandler = {
-            completionHandler(self.data, self.response, self.error)
-        }
-        return task
-    }
+protocol HTTPTransport: Sendable {
+    func response(for request: URLRequest) async throws -> HTTPResponse
 }
 
-class MockURLSessionDataTask: URLSessionDataTask {
-    var completionHandler: (() -> Void)?
-    
-    override func resume() {
-        completionHandler?()
-    }
-}
+struct URLSessionTransport: HTTPTransport {
+    let session: URLSession
 
-// Production code
-class NetworkService {
-    private let session: URLSession
-    
     init(session: URLSession = .shared) {
         self.session = session
     }
-    
-    func fetchData(from url: URL, completion: @escaping (Result<Data, Error>) -> Void) {
-        session.dataTask(with: url) { data, response, error in
-            if let error = error {
-                completion(.failure(error))
-            } else if let data = data {
-                completion(.success(data))
-            }
-        }.resume()
+
+    func response(for request: URLRequest) async throws -> HTTPResponse {
+        let (data, response) = try await session.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw NetworkService.Error.invalidResponse
+        }
+        return HTTPResponse(data: data, statusCode: httpResponse.statusCode)
+    }
+}
+
+struct StubHTTPTransport: HTTPTransport {
+    let handler: @Sendable (URLRequest) async throws -> HTTPResponse
+
+    func response(for request: URLRequest) async throws -> HTTPResponse {
+        try await handler(request)
+    }
+}
+
+struct NetworkService: Sendable {
+    enum Error: Swift.Error, Equatable {
+        case invalidResponse
+        case unacceptableStatus(Int)
+    }
+
+    private let transport: any HTTPTransport
+
+    init(transport: any HTTPTransport = URLSessionTransport()) {
+        self.transport = transport
+    }
+
+    func fetchMessage(from url: URL) async throws -> String {
+        let response = try await transport.response(for: URLRequest(url: url))
+        guard 200..<300 ~= response.statusCode else {
+            throw Error.unacceptableStatus(response.statusCode)
+        }
+        return String(decoding: response.data, as: UTF8.self)
+    }
+}
+
+@Suite("Network service")
+struct NetworkServiceTests {
+    private let endpoint = URL(string: "https://example.invalid/message")!
+
+    @Test("Decodes a successful response")
+    func success() async throws {
+        let transport = StubHTTPTransport { request in
+            #expect(request.url?.host == "example.invalid")
+            return HTTPResponse(data: Data("Hello".utf8), statusCode: 200)
+        }
+        let service = NetworkService(transport: transport)
+
+        let message = try await service.fetchMessage(from: endpoint)
+
+        #expect(message == "Hello")
+    }
+
+    @Test("Rejects an unsuccessful status")
+    func badStatus() async {
+        let transport = StubHTTPTransport { _ in
+            HTTPResponse(data: Data(), statusCode: 503)
+        }
+        let service = NetworkService(transport: transport)
+
+        await #expect(throws: NetworkService.Error.unacceptableStatus(503)) {
+            try await service.fetchMessage(from: endpoint)
+        }
     }
 }

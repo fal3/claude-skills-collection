@@ -1,298 +1,162 @@
 ---
-name: swift-modern-architecture-skill
-description: Guide for building iOS apps using Swift 6, iOS 18+, SwiftUI, SwiftData, and modern concurrency patterns. Use when writing Swift/iOS code, designing app architecture, or modernizing legacy patterns. Prevents outdated patterns like Core Data, ObservableObject, DispatchQueue, and NavigationView.
+name: Swift Modern Architecture Skill
+description: Use when designing new or intentionally modernized SwiftUI app architecture targeting Swift 6 with strict concurrency and iOS/iPadOS 18 or macOS 15, especially Observation ownership, dependency boundaries, SwiftData, structured concurrency, navigation state, and test seams. Do not use for arbitrary Swift questions, older deployment targets, UIKit-only work, or migrations where the existing Core Data, Combine, Dispatch, or XCTest design is not being reconsidered.
 ---
 
 # Swift Modern Architecture Skill
 
-Build iOS apps using Swift 6 and iOS 18+ best practices. This skill ensures code uses modern patterns: SwiftData (not Core Data), Observation framework (not Combine), Swift concurrency (not GCD), and current SwiftUI APIs.
+Design feature boundaries for the product's actual constraints. “Modern” means safe, testable, compatible, and maintainable—not replacing supported frameworks by reflex.
 
-## Core Principles
+## Declared baseline
 
-### 1. Swift 6 Concurrency First
-Always use Swift concurrency (`async/await`, `actor`, `@MainActor`) instead of GCD or completion handlers. Use structured concurrency (`TaskGroup`, `async let`) over unstructured tasks.
+- Xcode 16 or later
+- Swift 6 language mode with complete strict concurrency checking
+- iOS/iPadOS 18 or macOS 15
+- SwiftUI, Observation, and structured concurrency for new feature code where they fit
 
-### 2. Observation Framework Over Combine
-Use `@Observable` macro for state management instead of `ObservableObject` with `@Published`. The Observation framework is more efficient and has cleaner syntax.
+Ask for the real targets before generating code. For iOS 17, Observation and SwiftData are available, but this package's complete examples intentionally use the iOS 18 baseline. For older deployments, retain supported compatibility paths. OS 27-cycle APIs are beta relative to stable Xcode 26.6; include them only when explicitly requested, clearly labeled, gated with availability checks, and paired with a stable fallback.
 
-### 3. SwiftData Over Core Data
-For new projects, always use SwiftData with `@Model` and `@Query`. SwiftData provides simpler APIs while maintaining Core Data's power.
+## Activation boundary
 
-### 4. Modern SwiftUI APIs
-Use `NavigationStack` (not `NavigationView`), `@Entry` for environment values, `.task` modifier for async work, and built-in components like `ContentUnavailableView`.
+Activate when the user asks to design or modernize an app/feature architecture under the baseline above. Do not activate merely because a prompt mentions Swift, networking, persistence, concurrency, navigation, Core Data, Combine, Dispatch, or XCTest.
 
-### 5. Type Safety
-Use enums instead of strings for identifiers, typed throws for specific errors, and proper `Sendable` conformance for thread safety.
+Before recommending a migration, establish:
 
-### 6. Value Types When Possible
-Prefer structs and enums over classes unless reference semantics are required. Use `actor` for thread-safe shared mutable state.
+1. Deployment targets and Xcode/Swift versions.
+2. Existing persistence schema and migration history.
+3. Cloud sync, extensions, widgets, background work, and offline requirements.
+4. Team ownership, test suite, and staged-rollout constraints.
+5. Which user problem the migration solves and how success will be measured.
 
-## When to Use This Skill
+## Technology decisions
 
-Activate this skill when:
-- Writing Swift or iOS application code
-- Designing application architecture
-- Reviewing or modernizing existing Swift code
-- Setting up SwiftUI views, view models, or data models
-- Implementing networking, persistence, or business logic
-- Working with async operations or concurrency
+| Concern | Good default for a new baseline app | Supported alternatives and reasons to keep them |
+|---|---|---|
+| UI observation | `@Observable` | `ObservableObject`/Combine for older targets, existing APIs, or publisher semantics |
+| Persistence | SwiftData for a compatible model and requirements | Core Data for mature stores, established migrations, or capabilities the app already relies on; SQLite/GRDB or files when requirements fit better |
+| Async work | `async`/`await`, task groups, actors | Dispatch and operation queues for C/Obj-C interop, queue-specific APIs, existing scheduling, or measured low-level needs |
+| Unit tests | Swift Testing for new unit/integration tests | XCTest remains supported and is still needed for UI tests and common performance-test workflows |
+| Navigation | Value-driven `NavigationStack`/`NavigationSplitView` | Existing coordinators or UIKit navigation when the app's platform/UI architecture requires them |
 
-## Architecture Pattern: MVVM with Observation
+SwiftData can coexist with Core Data during an incremental migration. Swift Testing and XCTest can coexist in the same test target. Never present a supported framework as categorically obsolete.
 
-### View Model Structure
+## Feature boundaries
+
+Organize by feature and dependency direction, not by one global layer for every type:
+
+```text
+App/
+Features/
+  Weather/
+    WeatherScreen.swift
+    WeatherFeature.swift
+    WeatherClient.swift
+Domain/
+Persistence/
+Networking/
+```
+
+- Views render state and send user intent.
+- A feature model coordinates UI state only when the feature needs that coordination; small views do not require a view model.
+- Domain logic stays independent of SwiftUI and storage frameworks where practical.
+- Protocols create meaningful seams at side effects or ownership boundaries, not around every type.
+- Dependencies enter through initializers or a deliberate environment composition root.
+
+## Observation ownership and isolation
+
+- Put UI-observed mutable models on `@MainActor` explicitly. Do not rely on a project's optional default-actor-isolation setting.
+- Store a view-created `@Observable` reference in `@State` so SwiftUI owns its lifetime.
+- Pass injected observable references as plain properties for reading. Create `@Bindable` locally when child UI needs bindings.
+- Use `@Environment` only for intentionally subtree-scoped dependencies.
+- Keep non-UI services `Sendable` or actor-isolated as their shared mutable state requires.
+
 ```swift
+import Observation
+import SwiftUI
+
+@MainActor
 @Observable
-final class ViewModel {
-    // Private dependencies
-    private let service: ServiceProtocol
-    
-    // Public readable state
-    private(set) var data: [Item] = []
-    private(set) var isLoading = false
-    private(set) var error: Error?
-    
-    // User input state (use @Bindable in view)
-    var searchText = ""
-    var selectedFilter: Filter = .all
-    
-    init(service: ServiceProtocol) {
-        self.service = service
-    }
-    
-    // Public actions
-    func loadData() async {
-        isLoading = true
-        defer { isLoading = false }
-        
-        do {
-            data = try await service.fetchData()
-        } catch {
-            self.error = error
-        }
-    }
+final class SignInFeature {
+    var email = ""
+    private(set) var isSubmitting = false
 }
-```
 
-### View Structure
-```swift
-struct ContentView: View {
-    @Bindable var viewModel: ViewModel
-    
+@MainActor
+struct SignInScreen: View {
+    @State private var feature = SignInFeature()
+
     var body: some View {
-        content
-            .task { await viewModel.loadData() }
-    }
-    
-    @ViewBuilder
-    private var content: some View {
-        if viewModel.isLoading {
-            ProgressView()
-        } else {
-            List(viewModel.data) { item in
-                ItemRow(item: item)
-            }
-        }
+        @Bindable var feature = feature
+        TextField("Email", text: $feature.email)
     }
 }
 ```
 
-## SwiftData Quick Reference
+See [the complete ownership example](examples/observable_ownership.swift).
 
-### Model Definition
-```swift
-import SwiftData
+## Structured concurrency and request identity
 
-@Model
-final class Item {
-    var name: String
-    var createdAt: Date
-    @Relationship(deleteRule: .cascade) var children: [ChildItem]
-    
-    init(name: String) {
-        self.name = name
-        self.createdAt = Date()
-        self.children = []
-    }
-}
-```
+- Prefer child tasks, `async let`, and task groups when work belongs to an async operation.
+- Store an unstructured `Task` only when an object truly owns work across calls; cancel it on replacement and teardown.
+- After every suspension, check cancellation or current request identity before publishing results.
+- Do not launch an uncancelled task from `didSet` for rapidly changing selection/search input.
+- Keep UI state changes on `@MainActor`; isolate shared mutable service state with actors.
+- Bound fan-out for large collections and propagate cancellation.
 
-### Querying Data
-```swift
-// In SwiftUI view
-@Query(sort: \Item.createdAt, order: .reverse) 
-private var items: [Item]
+See [the complete latest-request-wins example](examples/weather_request_cancellation.swift).
 
-// With filter
-@Query(filter: #Predicate<Item> { $0.isComplete }) 
-private var completedItems: [Item]
+## Persistence and errors
 
-// With dynamic predicate
-@Query private var items: [Item]
+- Register every SwiftData model in the app's `ModelContainer`.
+- Treat `ModelContext.save()` as throwing. Propagate the error or present it; never use `try?` for user data writes.
+- Roll back failed edits when continuing with the same context, while recognizing that rollback affects all unsaved changes in that context.
+- When a visible list is filtered or sorted, map deletion offsets through the exact displayed collection before deleting.
+- Use stable model identity and test add/edit/delete failures.
+- Use `VersionedSchema` and `SchemaMigrationPlan` for schema changes. An ad hoc launch-time loop is not a substitute for a migration plan.
+- Test migrations from copies of every shipped schema, plus interrupted migration and sync scenarios.
 
-init(searchText: String) {
-    let predicate = #Predicate<Item> { item in
-        searchText.isEmpty || item.name.contains(searchText)
-    }
-    _items = Query(filter: predicate)
-}
-```
+See [the complete filtered-delete example](examples/todo_filtered_delete.swift) and [migration guidance](references/modern-patterns.md#migration-discipline).
 
-### Model Context Operations
-```swift
-@Environment(\.modelContext) private var modelContext
+## Networking and errors
 
-func addItem() {
-    let item = Item(name: "New")
-    modelContext.insert(item)
-    try? modelContext.save()
-}
+- Define a small `Sendable` client protocol around the feature's need, not an unbounded generic API client.
+- Validate status codes and decode typed responses in the service layer.
+- Preserve cancellation errors; do not convert cancellation into a user-facing failure.
+- Model idle, loading, content, empty, and failure states deliberately.
+- Make retry idempotence and offline behavior explicit.
+- Avoid displaying raw internal error strings when they are unstable or expose implementation details.
 
-func deleteItem(_ item: Item) {
-    modelContext.delete(item)
-    try? modelContext.save()
-}
-```
+## Navigation
 
-## API Client Pattern
+- Use stable, `Hashable` route values and value-driven destinations.
+- Keep route mutation at the owning feature or scene boundary.
+- Test deep links, invalid routes, restoration, compact/split transitions, and signed-out state changes.
+- A coordinator remains reasonable when bridging UIKit, complex cross-feature flows, or existing navigation infrastructure.
 
-Create an `actor` for thread-safe API operations:
+## Testing
 
-```swift
-actor APIClient {
-    private let session: URLSession
-    private let decoder: JSONDecoder
-    
-    init(session: URLSession = .shared) {
-        self.session = session
-        self.decoder = JSONDecoder()
-    }
-    
-    func fetch<T: Decodable>(_ endpoint: Endpoint) async throws -> T {
-        let (data, response) = try await session.data(for: endpoint.urlRequest)
-        
-        guard let httpResponse = response as? HTTPURLResponse,
-              (200...299).contains(httpResponse.statusCode) else {
-            throw APIError.invalidResponse
-        }
-        
-        return try decoder.decode(T.self, from: data)
-    }
-}
-```
+- Test domain rules without UI or persistence when possible.
+- Inject deterministic clocks, IDs, clients, and stores at side-effect boundaries.
+- Use Swift Testing for suitable new unit/integration tests; retain XCTest for existing suites, UI automation, and performance tests.
+- Test cancellation and stale-response suppression, not only the success path.
+- Exercise SwiftData with an isolated in-memory container and migration fixtures.
 
-## Navigation Pattern
+## Modernization sequence
 
-Use type-safe navigation with `NavigationStack`:
+1. Add characterization tests and field metrics.
+2. Choose one bounded feature or seam.
+3. Introduce compatibility adapters so old and new implementations can coexist.
+4. Migrate data with a versioned, tested plan.
+5. Roll out incrementally with rollback criteria.
+6. Remove the old path only after usage and correctness evidence supports it.
 
-```swift
-struct AppView: View {
-    @State private var path = NavigationPath()
-    
-    var body: some View {
-        NavigationStack(path: $path) {
-            RootView()
-                .navigationDestination(for: Item.self) { item in
-                    ItemDetailView(item: item)
-                }
-                .navigationDestination(for: User.self) { user in
-                    UserProfileView(user: user)
-                }
-        }
-    }
-}
-```
+Do not combine persistence, observation, navigation, networking, and test-framework migrations into one unreviewable rewrite.
 
-## Testing with Swift Testing
+## Package map
 
-Use the modern Swift Testing framework instead of XCTest:
-
-```swift
-import Testing
-
-@Test("View model loads data successfully")
-func dataLoading() async throws {
-    let viewModel = ViewModel(service: MockService())
-    await viewModel.loadData()
-    #expect(viewModel.data.isEmpty == false)
-}
-
-@Test("Validation fails with invalid input", arguments: [
-    "invalid-email",
-    "missing@",
-    "@domain.com"
-])
-func emailValidation(invalidEmail: String) throws {
-    #expect(throws: ValidationError.self) {
-        try validateEmail(invalidEmail)
-    }
-}
-```
-
-## Common Modernization Checks
-
-Before writing code, verify you're using:
-- ✅ `@Observable` NOT `ObservableObject`
-- ✅ `@Query` NOT `@FetchRequest`
-- ✅ `NavigationStack` NOT `NavigationView`
-- ✅ `async/await` NOT completion handlers
-- ✅ `@MainActor` NOT `DispatchQueue.main.async`
-- ✅ `actor` NOT serial `DispatchQueue`
-- ✅ `SwiftData.ModelContext` NOT `NSManagedObjectContext`
-- ✅ Swift Testing `@Test` NOT XCTest
-- ✅ Typed `throws(ErrorType)` when appropriate
-
-## Bundled Resources
-
-### References
-Load when you need detailed guidance:
-
-- **modern-patterns.md** - Comprehensive patterns for Swift 6/iOS 18+
-  - Load when: Implementing any feature, especially concurrency, data persistence, or API calls
-  
-- **anti-patterns.md** - What NOT to do and why
-  - Load when: Reviewing code, modernizing legacy patterns, or unsure about approach
-  
-- **examples.md** - Complete working implementations
-  - Load when: Starting new features (Todo app, Weather app, Auth flow examples)
-
-### Usage Pattern
-1. Read the relevant reference file before implementing complex features
-2. Check anti-patterns when reviewing existing code
-3. Reference complete examples when starting new app components
-
-## Quick Decision Tree
-
-**Need state management?**
-→ Use `@Observable` for view models
-→ Use `@State` for simple view-local state
-→ Use `@Environment` for dependency injection
-
-**Need data persistence?**
-→ Use SwiftData with `@Model` and `@Query`
-→ Never use Core Data for new code
-
-**Need async operations?**
-→ Use `async/await` and structured concurrency
-→ Mark UI-bound code with `@MainActor`
-→ Use `actor` for thread-safe shared state
-
-**Need navigation?**
-→ Use `NavigationStack` with `NavigationPath`
-→ Type-safe destinations with `.navigationDestination(for:)`
-
-**Need API calls?**
-→ Create an `actor` with `async throws` methods
-→ Use `URLSession.data(from:)` with async/await
-
-## Error Prevention
-
-This skill actively prevents these outdated patterns:
-- Core Data (`NSManagedObject`, `@FetchRequest`)
-- Combine (`ObservableObject`, `@Published`, `.sink`)
-- GCD (`DispatchQueue`, `DispatchGroup`)
-- Old SwiftUI (`NavigationView`, `NavigationLink(destination:)`)
-- Manual threading (`Thread`, `NSOperationQueue`)
-- Completion handlers when `async/await` is available
-- XCTest when Swift Testing is more appropriate
-
-When encountering these patterns in existing code, suggest modern alternatives from the references.
+- [Quick start](docs/QUICK_START.md)
+- [Balanced impact comparison](docs/IMPACT_COMPARISON.md)
+- [Pattern reference](references/modern-patterns.md)
+- [Failure patterns](references/anti-patterns.md)
+- [Complete examples](references/examples.md)
+- [Documentation index](docs/INDEX.md)

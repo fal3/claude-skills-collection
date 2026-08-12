@@ -1,0 +1,4 @@
+interface:
+  display_name: "iOS Accessibility"
+  short_description: "Audit and improve Apple app accessibility"
+  default_prompt: "Use $ios-accessibility-skill to audit and improve this Apple platform interface."

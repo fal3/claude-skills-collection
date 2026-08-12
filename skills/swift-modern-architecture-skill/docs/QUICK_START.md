@@ -1,211 +1,67 @@
-# Quick Start Guide - Swift Modern Architecture Skill
+# Quick start
 
-## 🎯 What This Skill Solves
+## 1. Confirm fit
 
-**Problem**: Claude often generates iOS code using outdated patterns from 2020-2023:
-- `ObservableObject` instead of `@Observable`
-- Core Data instead of SwiftData
-- `DispatchQueue` instead of `async/await`
-- `NavigationView` instead of `NavigationStack`
+Use this package for an architecture or modernization request targeting Swift 6 strict concurrency with iOS/iPadOS 18 or macOS 15. For older deployment targets or non-SwiftUI apps, choose compatibility guidance instead of forcing this package's defaults.
 
-**Solution**: This skill guides Claude to use **Swift 6 and iOS 18+ best practices**.
+Record persistence history, sync, extensions, background work, navigation, rollout, and test constraints.
 
-## 📦 Installation (30 seconds)
+## 2. Choose one feature boundary
 
-### For Your GitHub Repository
-```bash
-# Extract and add to your collection
-unzip swift-modern-architecture-skill.zip
-mv swift-modern-architecture-skill /path/to/claude-skills-collection/
-git add swift-modern-architecture-skill/
-git commit -m "Add Swift 6 modern architecture skill"
-```
+Start with a bounded user capability. Separate:
 
-### For Claude.ai
-1. Extract `swift-modern-architecture-skill.zip`
-2. Copy content of `SKILL.md`
-3. Paste into Claude conversation (it will recognize the skill format)
+- SwiftUI rendering and user intent;
+- optional `@MainActor @Observable` feature coordination;
+- pure domain rules;
+- small side-effect protocols;
+- concrete networking/persistence adapters at the composition root.
 
-### For Claude Code
-```bash
-# Install for automatic loading
-unzip swift-modern-architecture-skill.zip -d ~/.claude/skills/
-```
+Do not create a view model for a view that only needs local `@State`.
 
-## 🚀 Try It Now
+## 3. Declare ownership
 
-### Test 1: Create a Modern App
-```
-Prompt: "Create a SwiftUI todo app with persistence"
+For a view-owned observable model:
 
-Expected Output:
-✅ Uses SwiftData (@Model, @Query)
-✅ Uses @Observable for ViewModel
-✅ Uses async/await for operations
-✅ Uses NavigationStack
-```
-
-### Test 2: Build an API Client
-```
-Prompt: "Build a weather API client"
-
-Expected Output:
-✅ Uses actor for thread safety
-✅ Uses async/await (no completion handlers)
-✅ Proper error handling
-✅ Modern URLSession patterns
-```
-
-### Test 3: Modernize Legacy Code
-```
-Prompt: "Update this code to modern Swift patterns"
-[Paste old ObservableObject code]
-
-Expected Output:
-✅ Identifies outdated patterns
-✅ Suggests @Observable migration
-✅ Explains why changes are better
-✅ Provides updated code
-```
-
-## 📚 Skill Structure
-
-```
-swift-modern-architecture-skill/
-│
-├── SKILL.md (400 lines)
-│   ├── Core principles
-│   ├── Quick reference patterns
-│   ├── Decision trees
-│   └── When to load reference files
-│
-└── references/
-    ├── modern-patterns.md (350 lines)
-    │   └── Complete Swift 6/iOS 18+ patterns
-    │
-    ├── anti-patterns.md (250 lines)
-    │   └── What NOT to do + why
-    │
-    └── examples.md (400 lines)
-        └── Full app implementations
-```
-
-## 🎯 What Gets Generated
-
-### Before (Claude without this skill)
 ```swift
-// ❌ Outdated patterns
-class ViewModel: ObservableObject {
-    @Published var items: [Item] = []
-    
-    func loadData(completion: @escaping () -> Void) {
-        DispatchQueue.global().async {
-            // load data
-            DispatchQueue.main.async {
-                completion()
-            }
-        }
+@MainActor
+struct FeatureScreen: View {
+    @State private var feature: FeatureModel
+
+    init(client: any FeatureClient) {
+        _feature = State(initialValue: FeatureModel(client: client))
+    }
+
+    var body: some View {
+        @Bindable var feature = feature
+        // Bind controls to feature here.
     }
 }
 ```
 
-### After (Claude with this skill)
-```swift
-// ✅ Modern patterns
-@Observable
-final class ViewModel {
-    private(set) var items: [Item] = []
-    
-    @MainActor
-    func loadData() async throws {
-        items = try await dataService.fetch()
-    }
-}
-```
+This fragment assumes complete `FeatureModel` and `FeatureClient` definitions. For a standalone implementation, use [the ownership example](../examples/observable_ownership.swift).
 
-## 📖 Reference Files Usage
+## 4. Make async work replaceable
 
-The skill uses **progressive disclosure** - it only loads what's needed:
+When input changes rapidly, store the owned task, cancel its predecessor, and check both cancellation and request identity after awaiting. Use [the weather example](../examples/weather_request_cancellation.swift) as the template.
 
-| File | When to Load | Size |
-|------|-------------|------|
-| `SKILL.md` | Always (automatic) | 400 lines |
-| `modern-patterns.md` | Complex features | 350 lines |
-| `anti-patterns.md` | Code reviews | 250 lines |
-| `examples.md` | New projects | 400 lines |
+## 5. Persist truthfully
 
-Claude will automatically decide when to load reference files based on your request.
+Catch or propagate every meaningful save error. For filtered lists, delete objects resolved from the displayed collection—not the backing query at the same offsets. Use [the Todo example](../examples/todo_filtered_delete.swift).
 
-## ✅ Verification Checklist
+For schema changes, define a versioned migration and test real prior stores. Do not use a launch-time mutation loop as the migration plan.
 
-Your skill is working correctly if Claude:
+## 6. Keep supported compatibility paths
 
-- [ ] Uses `@Observable` instead of `ObservableObject`
-- [ ] Uses `@Query` instead of `@FetchRequest`
-- [ ] Uses `actor` for thread-safe shared state
-- [ ] Uses `async/await` instead of completion handlers
-- [ ] Uses `@MainActor` for UI updates
-- [ ] Uses `NavigationStack` instead of `NavigationView`
-- [ ] Uses Swift Testing instead of XCTest (when appropriate)
-- [ ] Uses `throws(ErrorType)` for typed errors
+- Retain Core Data when migration risk or required behavior outweighs benefits.
+- Retain `ObservableObject`/Combine for older targets and publisher-centric integrations.
+- Retain Dispatch/operation queues at APIs or scheduling boundaries that need them.
+- Use XCTest for UI/performance tests and existing coverage; add Swift Testing where it improves new unit tests.
 
-## 🔧 Troubleshooting
+## 7. Validate
 
-**Issue**: Claude still generates old patterns  
-**Fix**: Make your prompt more specific: "Create a [feature] using Swift 6 and iOS 18 patterns"
-
-**Issue**: Skill not loading  
-**Fix**: Mention "modern Swift" or "Swift 6" in your prompt to trigger activation
-
-**Issue**: Want more details  
-**Fix**: Ask Claude to "read the modern-patterns reference" for comprehensive guidance
-
-## 💡 Pro Tips
-
-1. **Mention Swift 6 or iOS 18** in your initial prompt to ensure skill activation
-2. **For large projects**, ask Claude to read the examples.md file first
-3. **For code reviews**, ask Claude to check against anti-patterns.md
-4. **For learning**, ask "What's the modern way to do X?" to get explanations
-
-## 🎓 Learn More
-
-The skill includes explanations for WHY patterns are better:
-
-```
-Ask: "Why should I use @Observable instead of ObservableObject?"
-
-Claude will explain:
-- Performance benefits
-- Cleaner syntax
-- Better SwiftUI integration
-- Reduced boilerplate
-```
-
-## 📊 Coverage
-
-| Pattern Category | Covered |
-|-----------------|---------|
-| State Management | ✅ @Observable, @State, @Environment |
-| Persistence | ✅ SwiftData, @Model, @Query |
-| Concurrency | ✅ async/await, actor, @MainActor |
-| Navigation | ✅ NavigationStack, NavigationPath |
-| API Clients | ✅ actor-based, async throws |
-| Testing | ✅ Swift Testing framework |
-| UI Patterns | ✅ Modern SwiftUI APIs |
-
-## 🤝 Integration with Your Skills
-
-Works great with:
-- ✅ swiftui-programming-skill (UI patterns)
-- ✅ ios-accessibility-skill (accessibility)
-- ✅ swift-performance-optimization-skill (performance)
-- ✅ memory-leak-diagnosis-skill (debugging)
-
-## 🎉 You're Ready!
-
-Try it now:
-```
-"Create a SwiftUI app with [your feature] using modern Swift patterns"
-```
-
-Happy coding! 🚀
+- Typecheck under Swift 6 complete strict concurrency.
+- Build at the oldest declared OS target.
+- Test success, failure, cancellation, stale responses, persistence failures, deep links, and restoration.
+- Test migration fixtures from every shipped schema.
+- Measure release performance before and after architectural changes.
+- Roll out incrementally with rollback criteria.

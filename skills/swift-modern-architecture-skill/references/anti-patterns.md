@@ -1,367 +1,91 @@
-# Common Anti-Patterns to Avoid
+# Architecture failure patterns
 
-This document catalogs outdated patterns that should be avoided in modern Swift/iOS development.
+These are contextual hazards, not a list of forbidden frameworks.
 
-## Concurrency Anti-Patterns
+## Blanket technology replacement
 
-### ❌ Using DispatchQueue
-```swift
-// DON'T: Manual thread management
-DispatchQueue.main.async {
-    self.isLoading = false
-}
+**Hazard:** “Core Data, Combine, Dispatch, and XCTest are obsolete; replace them.”
 
-DispatchQueue.global(qos: .background).async {
-    // Heavy work
-    let result = processData()
-    DispatchQueue.main.async {
-        self.updateUI(result)
-    }
-}
-```
+**Why it fails:** All remain supported and may encode years of tested behavior. A broad rewrite expands migration, concurrency, and rollout risk without proving user value.
 
-### ✅ Use async/await and @MainActor
-```swift
-// DO: Swift concurrency
-@MainActor
-func updateData() async {
-    let result = await Task.detached(priority: .background) {
-        processData()
-    }.value
-    updateUI(result)
-}
-```
+**Safer response:** Compare requirements, deployment targets, framework gaps, migration history, and team cost. Permit coexistence and migrate one bounded seam at a time.
 
-## State Management Anti-Patterns
+## Activation on every Swift question
 
-### ❌ Using @StateObject with ObservableObject
-```swift
-// DON'T: Old observation pattern
-class ViewModel: ObservableObject {
-    @Published var items: [Item] = []
-}
+**Hazard:** Applying an iOS 18 app architecture package to a Swift algorithm, server-side program, UIKit-only screen, or iOS 15 feature.
 
-struct ContentView: View {
-    @StateObject var viewModel = ViewModel()
-}
-```
+**Why it fails:** The package's SwiftUI, Observation, and SwiftData assumptions may not exist or may be irrelevant.
 
-### ✅ Use @Observable
-```swift
-// DO: Modern observation
-@Observable
-final class ViewModel {
-    var items: [Item] = []
-}
+**Safer response:** Activate only for explicit new/modernized feature architecture under Swift 6 and the declared OS baseline.
 
-struct ContentView: View {
-    let viewModel = ViewModel()
-}
-```
+## Unowned observable lifetime
 
-## Data Persistence Anti-Patterns
+**Hazard:** A view constructs an `@Observable` model as a plain `let` property and assumes SwiftUI preserves it through view reconstruction.
 
-### ❌ Using Core Data for New Projects
-```swift
-// DON'T: Core Data boilerplate
-class Book: NSManagedObject {
-    @NSManaged var title: String
-    @NSManaged var author: String
-}
+**Why it fails:** The view has not declared ownership to SwiftUI.
 
-@FetchRequest(sortDescriptors: [])
-var books: FetchedResults<Book>
-```
+**Safer response:** Store a view-created observable reference in `@State`. For injection, receive it as a plain property and use local `@Bindable` only where bindings are required. See [the ownership example](../examples/observable_ownership.swift).
 
-### ✅ Use SwiftData
-```swift
-// DO: SwiftData simplicity
-@Model
-final class Book {
-    var title: String
-    var author: String
-}
+## Implicit UI isolation
 
-@Query var books: [Book]
-```
+**Hazard:** Mutating loading, error, and view state from async methods without `@MainActor` because “Swift 6 defaults to the main actor.”
 
-## Network Anti-Patterns
+**Why it fails:** Default actor isolation is a project/compiler setting, not a guarantee of all Swift 6 code.
 
-### ❌ Completion Handler Pyramid
-```swift
-// DON'T: Callback hell
-func fetchUserData(completion: @escaping (Result<User, Error>) -> Void) {
-    fetchUserId { result in
-        switch result {
-        case .success(let id):
-            fetchUserProfile(id: id) { result in
-                switch result {
-                case .success(let profile):
-                    fetchUserPreferences(id: id) { result in
-                        completion(result)
-                    }
-                case .failure(let error):
-                    completion(.failure(error))
-                }
-            }
-        case .failure(let error):
-            completion(.failure(error))
-        }
-    }
-}
-```
+**Safer response:** Mark UI-observed models `@MainActor` explicitly and design service isolation separately.
 
-### ✅ Linear async/await Flow
-```swift
-// DO: Clean async flow
-func fetchUserData() async throws -> User {
-    let id = try await fetchUserId()
-    let profile = try await fetchUserProfile(id: id)
-    let preferences = try await fetchUserPreferences(id: id)
-    return User(profile: profile, preferences: preferences)
-}
-```
+## Suppressed persistence errors
 
-## UI Anti-Patterns
+**Hazard:** `try? modelContext.save()` after insert, edit, or delete.
 
-### ❌ NavigationView with Deprecated Patterns
-```swift
-// DON'T: Old navigation
-NavigationView {
-    List {
-        NavigationLink(destination: DetailView()) {
-            Text("Item")
-        }
-    }
-}
-```
+**Why it fails:** The UI can imply success while user data was not persisted.
 
-### ✅ NavigationStack with Type-Safe Paths
-```swift
-// DO: Modern navigation
-NavigationStack(path: $path) {
-    List {
-        Button("Item") {
-            path.append(item)
-        }
-    }
-    .navigationDestination(for: Item.self) { item in
-        DetailView(item: item)
-    }
-}
-```
+**Safer response:** Catch or propagate the error, roll back when appropriate, and provide retry/recovery UX. Test store failures.
 
-## Memory Management Anti-Patterns
+## Deleting by the wrong offsets
 
-### ❌ Weak Self Dance in Closures
-```swift
-// DON'T: Manual weak references
-func loadData() {
-    apiClient.fetch { [weak self] result in
-        guard let self = self else { return }
-        self.handleResult(result)
-    }
-}
-```
+**Hazard:** Display `filteredTodos`, then delete `todos[offset]` from the unfiltered query.
 
-### ✅ Structured Concurrency (No Weak Self Needed)
-```swift
-// DO: Task automatically handles cancellation
-func loadData() async {
-    let result = await apiClient.fetch()
-    handleResult(result) // No weak self needed
-}
-```
+**Why it fails:** `IndexSet` belongs to the displayed collection. Different order/content can delete the wrong record.
 
-## Testing Anti-Patterns
+**Safer response:** Resolve exact model objects from `filteredTodos` before deletion. See [the filtered-delete example](../examples/todo_filtered_delete.swift).
 
-### ❌ XCTestCase with Manual Assertions
-```swift
-// DON'T: Verbose XCTest
-class AuthTests: XCTestCase {
-    func testAuthentication() {
-        let expectation = expectation(description: "Auth completes")
-        authService.authenticate { result in
-            XCTAssertTrue(result.isSuccess)
-            expectation.fulfill()
-        }
-        waitForExpectations(timeout: 5)
-    }
-}
-```
+## Fire-and-forget selection tasks
 
-### ✅ Swift Testing with Modern Syntax
-```swift
-// DO: Concise Swift Testing
-@Test("Authentication succeeds with valid credentials")
-func authentication() async throws {
-    let result = try await authService.authenticate()
-    #expect(result.isSuccess)
-}
-```
+**Hazard:** Start `Task { await load(selection) }` from `didSet` without storing or canceling it.
 
-## Architecture Anti-Patterns
+**Why it fails:** Requests race. An older response or error can overwrite the newest selection, and loading state becomes unreliable.
 
-### ❌ Massive View Controllers
-```swift
-// DON'T: God object with mixed concerns
-class ProfileViewController: UIViewController {
-    // 500+ lines of networking, business logic, and UI code
-}
-```
+**Safer response:** Make selection an explicit intent, cancel the owned prior task, and verify request identity after suspension. See [the weather example](../examples/weather_request_cancellation.swift).
 
-### ✅ Separated Concerns with MVVM
-```swift
-// DO: Clear separation
-@Observable
-final class ProfileViewModel {
-    // Business logic only
-}
+## Uninitialized “complete” examples
 
-struct ProfileView: View {
-    let viewModel: ProfileViewModel
-    // UI only
-}
-```
+**Hazard:** Publish a type with stored dependencies but no initializer, reference `APIClient`/models that are not defined, or show a persistence model without required initializers.
 
-## Singleton Anti-Patterns
+**Why it fails:** Copying the advertised example does not compile, obscuring the architectural point.
 
-### ❌ Global Mutable State
-```swift
-// DON'T: Shared mutable singleton
-class AppState {
-    static let shared = AppState()
-    var currentUser: User?
-    var settings: Settings?
-}
-```
+**Safer response:** Put full source in an example file, declare imports and minima, and typecheck it independently. Use ellipses only in explicitly labeled pseudocode.
 
-### ✅ Dependency Injection with Environment
-```swift
-// DO: Injected dependencies
-@Observable
-final class AppState {
-    var currentUser: User?
-    var settings: Settings
-}
+## Ad hoc schema migration
 
-extension EnvironmentValues {
-    @Entry var appState = AppState()
-}
-```
+**Hazard:** On each launch, fetch every record and mutate missing values as the entire migration strategy.
 
-## Error Handling Anti-Patterns
+**Why it fails:** It does not version the schema, reason about incompatible changes, guarantee atomicity, or cover interrupted migration and sync.
 
-### ❌ Force Unwrapping and Try!
-```swift
-// DON'T: Crash-prone code
-let user = try! decoder.decode(User.self, from: data)
-let name = user.profile!.name!
-```
+**Safer response:** Use `VersionedSchema` and `SchemaMigrationPlan`, test copies of all shipped stores, and define rollback/recovery before release.
 
-### ✅ Proper Error Handling
-```swift
-// DO: Safe unwrapping and error propagation
-func decodeUser(from data: Data) throws -> User {
-    let user = try decoder.decode(User.self, from: data)
-    guard let profile = user.profile,
-          let name = profile.name else {
-        throw DecodingError.missingRequiredField
-    }
-    return user
-}
-```
+## Over-fetching and unbounded fan-out
 
-## SwiftUI Anti-Patterns
+**Hazard:** Fetch all rows or launch one task per item without a cap.
 
-### ❌ Excessive @State in Views
-```swift
-// DON'T: State explosion
-struct ContentView: View {
-    @State private var items: [Item] = []
-    @State private var isLoading = false
-    @State private var error: Error?
-    @State private var selectedItem: Item?
-    @State private var filterText = ""
-    @State private var sortOrder: SortOrder = .ascending
-}
-```
+**Why it fails:** Memory, database time, network pressure, and cancellation latency grow with the dataset.
 
-### ✅ View Model for Complex State
-```swift
-// DO: Encapsulated state management
-@Observable
-final class ContentViewModel {
-    var items: [Item] = []
-    var isLoading = false
-    var error: Error?
-    var selectedItem: Item?
-    var filterText = ""
-    var sortOrder: SortOrder = .ascending
-}
+**Safer response:** Page/filter at the store, bound concurrency, measure representative data, and propagate cancellation.
 
-struct ContentView: View {
-    let viewModel: ContentViewModel
-}
-```
+## Framework-shaped domain
 
-## Performance Anti-Patterns
+**Hazard:** Let SwiftUI, transport DTOs, or `ModelContext` flow through every domain type.
 
-### ❌ Synchronous Blocking Operations
-```swift
-// DON'T: Block main thread
-func loadImage(url: URL) -> UIImage {
-    let data = try! Data(contentsOf: url) // Blocks!
-    return UIImage(data: data)!
-}
-```
+**Why it fails:** Business rules become harder to test and framework changes spread across features.
 
-### ✅ Asynchronous Operations
-```swift
-// DO: Non-blocking async
-func loadImage(url: URL) async throws -> UIImage {
-    let (data, _) = try await URLSession.shared.data(from: url)
-    guard let image = UIImage(data: data) else {
-        throw ImageError.invalidData
-    }
-    return image
-}
-```
-
-## Type Safety Anti-Patterns
-
-### ❌ Stringly-Typed Code
-```swift
-// DON'T: String identifiers everywhere
-func loadScreen(_ screen: String) {
-    switch screen {
-    case "home": // Typo-prone
-        showHome()
-    case "profile":
-        showProfile()
-    default:
-        break
-    }
-}
-```
-
-### ✅ Type-Safe Enumerations
-```swift
-// DO: Compile-time safety
-enum Screen {
-    case home
-    case profile
-    case settings
-}
-
-func loadScreen(_ screen: Screen) {
-    switch screen {
-    case .home:
-        showHome()
-    case .profile:
-        showProfile()
-    case .settings:
-        showSettings()
-    }
-}
-```
+**Safer response:** Add boundaries where they buy isolation—side effects, persistence, transport, and cross-feature coordination—without wrapping every value in a protocol.

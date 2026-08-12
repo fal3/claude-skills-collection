@@ -1,0 +1,4 @@
+interface:
+  display_name: "Cross-Platform Apple Apps"
+  short_description: "Design apps across Apple platform targets"
+  default_prompt: "Use $cross-platform-app-development-skill to design this feature across Apple platforms."

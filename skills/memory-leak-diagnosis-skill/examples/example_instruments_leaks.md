@@ -1,95 +1,61 @@
-# Using Instruments to Detect Memory Leaks
+# Repeatable memory-diagnosis workflow
 
-## Setup
-1. Open Instruments: In Xcode, go to Product > Profile (⌘I)
-2. Choose Leaks Instrument: Select the "Leaks" template
-3. Configure Recording:
-   - Target your app
-   - Make sure "Record reference counts" is enabled
-   - Start recording
+## 1. Define the lifecycle
 
-## Usage
-4. Use Your App: Navigate through the screens where you suspect leaks
-5. Analyze Results:
-   - Look for red bars in the Leaks track - these indicate memory leaks
-   - The Detail pane shows leaked objects and their allocation backtraces
-   - Use the "Cycles & Roots" view to see retain cycles
+Write down the type, expected owner, and release point. Example: “After dismissing `EditorViewController` and allowing its save task to finish, the controller and view model should deinitialize.”
 
-## Example Output
-```
-Leaks detected: 5
-- Leaked Object: ViewController (0x7f9b8c0a5e00)
-  - Responsible Library: UIKit
-  - Allocation: -[UIViewController initWithNibName:bundle:]
-  - Backtrace shows it was created in viewDidLoad of parent VC
-  - Never deallocated because of retain cycle with timer
+Add temporary `deinit` logs or a debug-only lifetime probe. Record the initial live-instance count.
 
-- Leaked Object: Timer (0x7f9b8c0a6120)
-  - Responsible Library: Foundation
-  - Allocation: +[NSTimer scheduledTimerWithTimeInterval:target:selector:userInfo:repeats:]
-  - Strong reference to target (ViewController) prevents deallocation
-```
+## 2. Reproduce consistently
 
-## Common Leak Patterns
+Use a release-like build configuration when practical. Repeat the same present/use/dismiss sequence three to five times, returning to the same idle state after each pass. Record settled memory and instance counts; peak memory alone is not proof of a leak.
 
-### Timer Retain Cycles
-```swift
-// BAD
-class MyViewController: UIViewController {
-    var timer: Timer?
-    
-    func startTimer() {
-        timer = Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(update), userInfo: nil, repeats: true)
-    }
-    
-    @objc func update() {
-        // Update UI
-    }
-}
+## 3. Inspect Memory Graph
 
-// GOOD
-class MyViewController: UIViewController {
-    var timer: Timer?
-    
-    func startTimer() {
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            self?.update()
-        }
-    }
-    
-    func update() {
-        // Update UI
-    }
-    
-    deinit {
-        timer?.invalidate()
-    }
-}
-```
+1. Pause after the object should be released.
+2. Open Debug Memory Graph.
+3. Search for the concrete stale type.
+4. Select an unexpected instance and follow incoming strong references back toward a root.
+5. Capture the root path and the lifecycle that installed it.
 
-### Closure Capture Issues
-```swift
-// BAD
-var completion: (() -> Void)?
-completion = {
-    self.doSomething() // Creates retain cycle
-}
+Do not infer ownership from remembered arrow colors or displayed reference counts. Xcode presentation changes; inspect whether each relationship is strong, weak, unowned, or a runtime/framework root.
 
-// GOOD  
-completion = { [weak self] in
-    self?.doSomething() // Breaks the cycle
-}
-```
+## 4. Compare Allocations generations
 
-### Delegate Strong References
-```swift
-// BAD
-class MyObject {
-    var delegate: MyDelegate? // Strong reference
-}
+1. Profile with Instruments Allocations.
+2. Mark a generation at the idle baseline.
+3. Perform one lifecycle and return to idle.
+4. Mark another generation and repeat.
+5. Filter to application types and inspect allocations that persist across every generation.
 
-// GOOD
-class MyObject {
-    weak var delegate: MyDelegate? // Weak reference
-}
-```
+A bounded cache may retain objects intentionally. Verify its limit, eviction policy, and response to memory pressure before calling it a leak.
+
+## 5. Use Leaks for its actual scope
+
+Add the Leaks instrument and inspect reported unreachable heap allocations and their allocation backtraces. A clean Leaks track does not prove that a controller retained by a task, timer, observer, or framework root was released.
+
+Use VM Tracker when growth comes from mapped files, image surfaces, graphics resources, or other virtual-memory regions rather than Swift object counts.
+
+## 6. Audit common owners
+
+- Stored closures and callback registries
+- Tasks, continuations, and AsyncStream termination
+- Notification and Combine tokens
+- Timers, display links, and animation callbacks
+- Delegates, data sources, KVO, and URLSession delegates
+- SwiftUI state/environment models and presentation closures
+- Core Data / SwiftData contexts
+- Image, response, and decoded-data caches
+
+## 7. Verify the repair
+
+Run the identical workflow again. Require all applicable evidence:
+
+- expected `deinit` probes fire;
+- stale instance counts return to baseline;
+- persistent Allocations generations stop growing;
+- Leaks no longer reports the fixed allocation;
+- settled footprint stabilizes after repeated use;
+- cancellation, error, and early-dismissal paths also clean up.
+
+Enable Zombies only in a separate run when diagnosing use-after-free. Zombies deliberately keep deallocated objects resident and must not be used to validate leak or footprint fixes.

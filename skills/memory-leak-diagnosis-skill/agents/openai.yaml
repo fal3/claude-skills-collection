@@ -1,0 +1,4 @@
+interface:
+  display_name: "Memory Leak Diagnosis"
+  short_description: "Find and fix Swift memory ownership leaks"
+  default_prompt: "Use $memory-leak-diagnosis-skill to diagnose this memory ownership problem."

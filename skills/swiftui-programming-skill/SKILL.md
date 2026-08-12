@@ -1,208 +1,111 @@
 ---
 name: SwiftUI Programming Skill
-description: Expertise in SwiftUI for building declarative user interfaces, including SF Symbols integration and best practices.
-version: 1.0
-activation: Activate for queries on SwiftUI development, declarative UI building, SF Symbols usage, or SwiftUI component creation.
+description: Use when work involves SwiftUI view composition, state and Observation ownership, navigation, adaptive layout, toolbars, forms, SF Symbols, accessibility, previews, or SwiftUI-specific performance. Do not use for UIKit/AppKit-only work, general Swift language questions, or architecture and performance work that does not involve SwiftUI.
 ---
 
 # SwiftUI Programming Skill
 
-This skill provides comprehensive guidance on developing user interfaces using SwiftUI, Apple's modern framework for building apps across all Apple platforms. It emphasizes declarative programming, state management, and integration with system features like SF Symbols.
+Build SwiftUI interfaces that are correct for the user's declared platforms and deployment targets. Ask for those targets when an API choice depends on them; never assume the newest SDK is deployable.
 
-## Best Practices
+## Supported baseline
 
-1. **Declarative Syntax**: Use SwiftUI's declarative approach to describe what the UI should look like, not how to build it.
+The primary examples use Xcode 15, Swift 5.9, and iOS/iPadOS 17 or macOS 14. SwiftUI itself supports older systems, but newer APIs need explicit availability handling:
 
-2. **State Management**: Leverage `@State`, `@ObservedObject`, `@EnvironmentObject` for managing view state.
+| Need | Preferred API | Minimum | Compatibility path |
+|---|---|---|---|
+| Stack navigation | `NavigationStack` | iOS 16, macOS 13, tvOS 16, watchOS 9 | `NavigationView` remains valid for earlier targets |
+| Observation | `@Observable` | iOS 17, macOS 14, tvOS 17, watchOS 10 | `ObservableObject` and `@StateObject` remain supported |
+| Toolbars | `.toolbar` | iOS 14, macOS 11, tvOS 14, watchOS 7 | Put controls in the view hierarchy on earlier targets |
+| Modern change handling | zero- or two-parameter `onChange` | iOS 17, macOS 14, tvOS 17, watchOS 10 | Use the one-parameter overload on earlier targets |
 
-3. **Composition**: Build complex views by composing simpler views.
+APIs from the OS 27 development cycle are beta material relative to the stable Xcode 26.6 toolchain. Discuss them only when explicitly requested, label them beta, and provide stable fallbacks plus `#available` gates.
 
-4. **Accessibility**: Always consider accessibility features from the start.
+## Workflow
 
-5. **Performance**: Use appropriate modifiers and avoid unnecessary view updates.
+1. Record Swift, Xcode, and every platform minimum.
+2. Choose semantic system controls before custom controls.
+3. Define state ownership and a stable identity model.
+4. Choose navigation and layout from capabilities, not device-name guesses.
+5. Add accessibility and Dynamic Type while composing the view.
+6. Compile at the oldest supported targets; test large accessibility sizes and relevant input methods.
+7. Profile before adding performance-specific wrappers or caches.
 
-6. **SF Symbols**: Utilize Apple's symbol library for consistent iconography.
+## State and Observation
 
-## SwiftUI Guidelines
+- Use `@State` for view-owned value state.
+- For a view-owned `@Observable` reference, store it in `@State` so SwiftUI owns its lifetime.
+- Pass an injected observable model as a plain property when the view only reads it. Create `@Bindable` locally when the view needs bindings.
+- Use `@Environment` for dependencies intentionally shared through a subtree.
+- Keep UI-observed mutable models on `@MainActor` unless their isolation is deliberately designed otherwise.
+- Do not copy derived state into another mutable property. Prefer a computed property.
 
-- Prefer built-in components over custom implementations when possible.
-- Use SwiftUI's layout system (HStack, VStack, ZStack) effectively.
-- Implement dark mode support automatically with Color and system colors.
-- Handle orientation changes gracefully.
-- Use `@AppStorage` for simple user preferences.
-
-## Examples
-
-### Example 1: Basic View with Toolbar
-
-**User Prompt:** "Create a SwiftUI view with a navigation bar and toolbar items using SF Symbols."
-
-**Expected Output:**
 ```swift
+import Observation
 import SwiftUI
 
-struct ContentView: View {
+@MainActor
+@Observable
+final class ProfileModel {
+    var displayName = ""
+}
+
+struct ProfileEditor: View {
+    @State private var model = ProfileModel()
+
     var body: some View {
-        NavigationView {
-            Text("Hello, World!")
-                .navigationTitle("My App")
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarLeading) {
-                        Button(action: {
-                            // Action for leading button
-                        }) {
-                            Image(systemName: "line.horizontal.3")
-                        }
-                    }
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button(action: {
-                            // Action for trailing button
-                        }) {
-                            Image(systemName: "plus")
-                        }
-                    }
-                }
-        }
+        @Bindable var model = model
+        TextField("Display name", text: $model.displayName)
     }
 }
 ```
 
-### Example 2: State Management with @State
+For iOS 16 and earlier, use `ObservableObject` with `@StateObject` for view ownership and `@ObservedObject` for injection. That is a compatibility decision, not an anti-pattern.
 
-**User Prompt:** "Show how to create a toggle button that changes the background color using SwiftUI."
+## Composition and layout
 
-**Expected Output:**
-```swift
-import SwiftUI
+- Extract subviews around meaningful responsibility, reuse, or independent state—not to force a presumed redraw boundary.
+- Prefer flexible frames, stacks, grids, `ViewThatFits`, and size classes. Use `GeometryReader` only when the child genuinely needs the proposed size.
+- Respect safe areas unless the visual treatment deliberately extends under system UI.
+- Use semantic colors and text styles; avoid fixed text heights and one-line truncation for user content.
+- Treat iPad multitasking, macOS window resizing, tvOS focus, watchOS glanceability, and visionOS volumes as distinct capabilities.
 
-struct ToggleView: View {
-    @State private var isOn = false
-    
-    var body: some View {
-        ZStack {
-            (isOn ? Color.blue : Color.gray)
-                .edgesIgnoringSafeArea(.all)
-            
-            VStack {
-                Text(isOn ? "Light Mode" : "Dark Mode")
-                    .foregroundColor(.white)
-                    .font(.largeTitle)
-                
-                Toggle("Toggle Mode", isOn: $isOn)
-                    .padding()
-                    .toggleStyle(SwitchToggleStyle(tint: .white))
-            }
-        }
-    }
-}
-```
+## Navigation and toolbars
 
-### Example 3: Using SF Symbols with Custom Styling
+- Model destinations with stable, `Hashable` route data when navigation is state-driven.
+- Prefer `NavigationStack` at its supported minimum. Use `NavigationSplitView` for genuinely multi-column interfaces, with a compact fallback.
+- Keep destination construction consistent: every destination receives the selected value it requires.
+- Use semantic toolbar placements such as `.primaryAction`, `.confirmationAction`, and `.cancellationAction` where they express intent across platforms.
+- Do not use iOS-only placements or modifiers in an ungated all-platform view.
 
-**User Prompt:** "How can I display an SF Symbol with custom colors and effects in SwiftUI?"
+See [the complete toolbar example](examples/example_toolbar.swift) and [prompt scenarios](examples/prompts.md).
 
-**Expected Output:**
-```swift
-import SwiftUI
+## Accessibility and Dynamic Type
 
-struct SymbolView: View {
-    var body: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "star.fill")
-                .font(.system(size: 50))
-                .foregroundColor(.yellow)
-            
-            Image(systemName: "heart.fill")
-                .font(.system(size: 50))
-                .foregroundColor(.red)
-                .shadow(radius: 5)
-            
-            Image(systemName: "moon.fill")
-                .font(.system(size: 50))
-                .foregroundColor(.blue)
-                .background(Circle().fill(Color.white).shadow(radius: 3))
-                .clipShape(Circle())
-        }
-    }
-}
-```
+- Prefer `Button`, `Toggle`, `TextField`, `Label`, and other semantic controls.
+- Label icon-only controls with their purpose. Hints describe the result of an action, not the gesture.
+- Keep separate interactive controls as separate accessibility elements.
+- Use semantic fonts (`.body`, `.headline`) or `@ScaledMetric`; do not claim that a fixed `.system(size:)` font scales.
+- Preserve alternatives to color, adequate interactive sizes and spacing, Reduce Motion, and Differentiate Without Color.
 
-### Example 4: List with Navigation
+## Performance
 
-**User Prompt:** "Generate a SwiftUI list that navigates to detail views."
+- First measure with Instruments on a release build and representative hardware.
+- Give collection elements stable IDs. Never use array offsets as identity for mutable collections.
+- `List` already creates rows lazily. Use `ScrollView` plus `LazyVStack` for layout/interaction behavior that `List` cannot provide, not as a blanket speed upgrade.
+- A parent body evaluation does not mean every descendant is redrawn on screen. Keep `body` inexpensive, but do not promise that extracting a view creates an independent render boundary.
+- Use SwiftUI's `.equatable()` or `EquatableView` only after measurement and only when equality fully represents visible output.
+- Cancel asynchronous work when its owning view disappears or its input changes. `.task(id:)` is usually the clearest view-lifetime tool.
 
-**Expected Output:**
-```swift
-import SwiftUI
+## SF Symbols
 
-struct Item: Identifiable {
-    let id = UUID()
-    let name: String
-}
+- Verify each symbol exists for the deployment target and choose a fallback for newer symbols.
+- Use rendering modes and symbol effects only at their documented availability.
+- Give decorative symbols no separate accessibility focus; label icon-only controls at the control level.
 
-struct ListView: View {
-    let items = [Item(name: "Item 1"), Item(name: "Item 2"), Item(name: "Item 3")]
-    
-    var body: some View {
-        NavigationView {
-            List(items) { item in
-                NavigationLink(destination: DetailView(item: item)) {
-                    Text(item.name)
-                }
-            }
-            .navigationTitle("Items")
-        }
-    }
-}
+## Copy-ready examples
 
-struct DetailView: View {
-    let item: Item
-    
-    var body: some View {
-        Text("Detail for \(item.name)")
-            .navigationTitle(item.name)
-    }
-}
-```
+- [State-driven toggle](examples/example_toggle.swift)
+- [Navigation and semantic toolbar actions](examples/example_toolbar.swift)
+- [Example prompts](examples/prompts.md)
 
-### Example 5: Form with Validation
-
-**User Prompt:** "Create a SwiftUI form for user input with basic validation."
-
-**Expected Output:**
-```swift
-import SwiftUI
-
-struct FormView: View {
-    @State private var name = ""
-    @State private var email = ""
-    @State private var isValid = false
-    
-    var body: some View {
-        NavigationView {
-            Form {
-                Section(header: Text("Personal Information")) {
-                    TextField("Name", text: $name)
-                    TextField("Email", text: $email)
-                        .keyboardType(.emailAddress)
-                        .autocapitalization(.none)
-                }
-                
-                Section {
-                    Button("Submit") {
-                        // Submit action
-                    }
-                    .disabled(!isValid)
-                }
-            }
-            .navigationTitle("User Form")
-            .onChange(of: name) { _ in validateForm() }
-            .onChange(of: email) { _ in validateForm() }
-        }
-    }
-    
-    private func validateForm() {
-        isValid = !name.isEmpty && email.contains("@")
-    }
-}
-```
+When a requested example spans architecture, accessibility, performance, or platform-specific behavior, keep this skill focused on the SwiftUI layer and route the other concerns to their dedicated guidance.

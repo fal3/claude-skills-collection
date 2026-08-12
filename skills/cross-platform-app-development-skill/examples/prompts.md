@@ -1,16 +1,16 @@
-# Example Prompts for Cross-Platform App Development Skill
+# Prompt scenarios
 
-## Prompt 1: Adaptive Layout
-"Create an adaptive layout that works on both iPhone and iPad."
+## Should activate
 
-## Prompt 2: Platform-Specific Code
-"How do I implement platform-specific features in a shared SwiftUI codebase?"
+- "Create a target matrix for iOS 17, macOS 14, watchOS 10, and visionOS 1 before proposing shared code."
+- "Share this domain feature while keeping file picking behind UIKit and AppKit capability implementations."
+- "Build split navigation for iPad/Mac/visionOS and stack navigation for watchOS/tvOS with compile-safe branches."
+- "Adapt this view to window size without using a regular size class as an iPad detector."
+- "Review storage durability and sync behavior separately for tvOS and the other targets."
+- "Test keyboard, focus engine, Digital Crown, and spatial input paths for this shared action."
 
-## Prompt 3: Environment Adaptations
-"Adapt a view based on the current platform and color scheme using environment values."
+## Should not activate
 
-## Prompt 4: Navigation Adaptations
-"Implement navigation that adapts to different platforms automatically."
-
-## Prompt 5: Dynamic Layouts
-"Use GeometryReader to create a layout that adapts to available space."
+- "Build this feature only for iPhone."
+- "Rewrite this app in React Native."
+- "Explain a Swift generic that has no platform-specific behavior."

@@ -1,67 +1,42 @@
 import SwiftUI
 
-struct AdaptiveContentView: View {
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    
+struct AdaptiveLayoutExample: View {
     var body: some View {
-        Group {
-            if horizontalSizeClass == .compact {
-                // iPhone portrait or small screens
-                VStack {
-                    HeaderView()
-                    ContentListView()
-                    FooterView()
-                }
-            } else {
-                // iPad or wide screens
-                HStack {
-                    SidebarView()
-                    VStack {
-                        HeaderView()
-                        ContentListView()
-                    }
-                    DetailView()
-                }
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .top, spacing: 24) {
+                SummaryPanel()
+                DetailPanel()
+            }
+
+            VStack(alignment: .leading, spacing: 16) {
+                SummaryPanel()
+                DetailPanel()
             }
         }
+        .padding()
     }
 }
 
-struct HeaderView: View {
+private struct SummaryPanel: View {
     var body: some View {
-        Text("App Header")
-            .font(.largeTitle)
-            .padding()
-    }
-}
-
-struct ContentListView: View {
-    var body: some View {
-        List(1...10, id: \.self) { item in
-            Text("Item \(item)")
+        VStack(alignment: .leading) {
+            Text("Summary")
+                .font(.headline)
+            Text("Shared content chooses a layout from the available space.")
+                .fixedSize(horizontal: false, vertical: true)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
-struct SidebarView: View {
+private struct DetailPanel: View {
     var body: some View {
-        Text("Sidebar")
-            .frame(width: 200)
-            .background(Color.gray.opacity(0.2))
-    }
-}
-
-struct DetailView: View {
-    var body: some View {
-        Text("Detail View")
-            .frame(maxWidth: .infinity)
-            .background(Color.blue.opacity(0.1))
-    }
-}
-
-struct FooterView: View {
-    var body: some View {
-        Text("Footer")
-            .padding()
+        VStack(alignment: .leading) {
+            Text("Details")
+                .font(.headline)
+            Text("Platform-specific behavior belongs behind a capability boundary.")
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

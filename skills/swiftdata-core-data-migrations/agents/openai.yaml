@@ -1,0 +1,4 @@
+interface:
+  display_name: "SwiftData & Core Data Migrations"
+  short_description: "Plan safe Apple persistence migrations"
+  default_prompt: "Use $swiftdata-core-data-migrations to plan and validate this Apple persistence migration."

@@ -1,112 +1,37 @@
 # SpeechAnalyzer Framework Expert
 
-This skill provides comprehensive expertise in implementing Apple's modern Speech framework for macOS 26+ and iOS 26+. It covers `SpeechAnalyzer`, `SpeechTranscriber`, and on-device speech-to-text transcription with best practices for real-time audio processing.
+Use this skill for Apple’s stable SpeechAnalyzer-generation transcription APIs.
 
-## Activation
+## Baseline
 
-This skill activates automatically for queries related to:
-- Speech framework (macOS 26+, iOS 26+)
-- SpeechAnalyzer and SpeechTranscriber APIs
-- On-device speech recognition and transcription
-- Audio buffer processing for speech-to-text
-- Migrating from WhisperKit or SFSpeechRecognizer
-- Real-time microphone transcription
-- Locale management and language model downloads
+- Xcode 26 or newer.
+- iOS 26, macOS 26, visionOS 26, or tvOS 26 for SpeechAnalyzer and SpeechTranscriber.
+- No watchOS support.
+- DictationTranscriber is unavailable on tvOS and watchOS.
+- Live microphone example: iOS 26 only.
 
-## Key Features
+The guidance is validated against Xcode 26.6 and the iOS 26.5 SDK. APIs that appear only in a later beta SDK belong in a beta-only source path plus runtime availability gates; stable Xcode cannot compile unknown symbols hidden only by `#available`. Keep the stable 26 path.
 
-### Performance
-- **2.2x faster** than Whisper Large V3 Turbo
-- **Out-of-process execution** eliminates memory limits in your app
-- **Automatic system updates** without app redeployment
+## Correct API model
 
-### Language Support
-- 10+ languages supported including:
-  - English, Spanish, French, German, Italian
-  - Japanese, Korean, Portuguese, Russian, Chinese
+1. Check device availability and resolve an equivalent supported locale.
+2. Reserve the locale through `AssetInventory`.
+3. Install required assets.
+4. Guard the optional compatible audio format.
+5. Analyze input and consume `SpeechTranscriber.Result` values.
+6. Read `result.text` (`AttributedString`) and `result.isFinal`.
+7. Finalize or cancel analysis, await result work, and release reservations created by the feature.
 
-### Capabilities
-- Real-time transcription with volatile results
-- Final transcription segments
-- Word-level timing information
-- On-device processing for privacy
-- Automatic model management and downloads
+`AssetInstallationRequest.progress` is Foundation `Progress`, not an async sequence. The stable SDK has no `SpeechTranscriber.allocate(locale:)`, `SpeechTranscriptionResult`, or `result.transcription` API.
 
-## Setup
+## Included examples
 
-To use this skill effectively:
+- `basic_setup.swift`: scoped preparation and reservation ownership.
+- `locale_manager.swift`: locale equivalence, install progress, and release.
+- `error_handling.swift`: typed failures and result accumulation.
+- `file_transcription.swift`: structured finite-file analysis.
+- `live_transcription.swift` + `buffer_converter.swift`: iOS permissions, audio session, capture, conversion, result task, and teardown.
 
-1. **System Requirements**
-   - macOS 26+ or iOS 26+
-   - Xcode 16+ for development
-   - Device running latest OS for on-device transcription
+Live iOS apps must provide `NSSpeechRecognitionUsageDescription` and `NSMicrophoneUsageDescription`. Coordinate `AVAudioSession` centrally if the app also plays audio or records elsewhere.
 
-2. **Framework Import**
-   ```swift
-   import Speech
-   ```
-
-3. **Privacy Permissions**
-   - Add `NSSpeechRecognitionUsageDescription` to Info.plist
-   - Add `NSMicrophoneUsageDescription` for microphone access
-
-4. **Key Concepts**
-   - Understand `SpeechAnalyzer` as the main coordinator
-   - Learn `SpeechTranscriber` module setup and configuration
-   - Master `AsyncStream` patterns for audio input
-   - Implement proper audio format conversion with `AVAudioConverter`
-
-## Critical Setup Sequence
-
-Always follow this order to avoid runtime errors:
-
-1. Create `SpeechTranscriber` with locale
-2. Download language models via `AssetInventory`
-3. **Allocate locale** (critical step after download)
-4. Create `SpeechAnalyzer` with transcriber modules
-5. Get best audio format
-6. Create `AsyncStream<AnalyzerInput>` for input
-7. Start analyzer with input sequence
-8. Consume results from transcriber
-
-## Examples
-
-See the `examples/` directory for:
-- Complete microphone transcription implementation
-- Audio buffer conversion patterns
-- Locale management and model downloads
-- Error handling strategies
-- SwiftUI integration examples
-
-## Common Issues
-
-### "Cannot use modules with unallocated locales"
-**Solution**: Always call `transcriber.allocate(locale:)` after downloading models via `AssetInventory.assetInstallationRequest()`.
-
-### Audio Timestamp Drift
-**Solution**: Set `converter.primeMethod = .none` on your `AVAudioConverter` to prevent timestamp drift.
-
-### Empty or Delayed Results
-**Solution**: Ensure audio buffers are converted to the format returned by `SpeechAnalyzer.bestAvailableAudioFormat(compatibleWith:)`.
-
-## Resources
-
-- [WWDC 2025 Session 277: What's new in Speech framework](https://developer.apple.com/videos/wwdc2025/)
-- [Apple Speech Framework Documentation](https://developer.apple.com/documentation/speech)
-- [SpeechAnalyzer Reference](https://developer.apple.com/documentation/speech/speechanalyzer)
-- [SpeechTranscriber Reference](https://developer.apple.com/documentation/speech/speechtranscriber)
-- [AssetInventory Documentation](https://developer.apple.com/documentation/speech/assetinventory)
-
-## Migration Guide
-
-### From WhisperKit
-- Replace WhisperKit pipeline with SpeechAnalyzer
-- Use native `AVAudioPCMBuffer` instead of Float arrays
-- Leverage automatic model updates (no manual downloads)
-- Switch from `Task` polling to `AsyncSequence` consumption
-
-### From SFSpeechRecognizer
-- Replace `SFSpeechRecognizer` with `SpeechAnalyzer`
-- Update audio input from `SFSpeechAudioBufferRecognitionRequest` to `AsyncStream<AnalyzerInput>`
-- Migrate result handling from delegate callbacks to async iteration
-- Use `SpeechTranscriber.supportedLocales` instead of `SFSpeechRecognizer.supportedLocales()`
+Resources: [SpeechAnalyzer](https://developer.apple.com/documentation/speech/speechanalyzer), [SpeechTranscriber](https://developer.apple.com/documentation/speech/speechtranscriber), and [AssetInventory](https://developer.apple.com/documentation/speech/assetinventory).

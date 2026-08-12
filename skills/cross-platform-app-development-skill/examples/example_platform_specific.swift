@@ -1,62 +1,26 @@
 import SwiftUI
 
-struct CrossPlatformView: View {
+struct PlatformSpecificExample: View {
     var body: some View {
-        VStack {
-            Text("Shared Content")
-            
-            #if os(iOS)
-            iOSOnlyView()
+        VStack(spacing: 12) {
+            Text("Shared account status")
+
+            #if targetEnvironment(macCatalyst)
+            Label("Running with Mac Catalyst", systemImage: "macwindow")
+            #elseif os(iOS)
+            Label("Touch and keyboard actions", systemImage: "iphone")
             #elseif os(macOS)
-            MacOnlyView()
+            Label("Commands and multiple windows", systemImage: "macwindow")
             #elseif os(watchOS)
-            WatchOnlyView()
+            Label("Glanceable watch action", systemImage: "applewatch")
             #elseif os(tvOS)
-            TVOnlyView()
+            Label("Focus-driven TV action", systemImage: "appletv")
+            #elseif os(visionOS)
+            Label("Windowed spatial action", systemImage: "visionpro")
+            #else
+            Text("Unsupported platform")
             #endif
         }
-    }
-}
-
-#if os(iOS)
-struct iOSOnlyView: View {
-    var body: some View {
-        Button("iOS Specific Button") {
-            // iOS specific action
-        }
-        .buttonStyle(.borderedProminent)
-    }
-}
-#endif
-
-#if os(macOS)
-struct MacOnlyView: View {
-    var body: some View {
-        Button("macOS Specific Button") {
-            // macOS specific action
-        }
-        .buttonStyle(.bordered)
-    }
-}
-#endif
-
-#if os(watchOS)
-struct WatchOnlyView: View {
-    var body: some View {
-        Text("WatchOS Interface")
-            .font(.caption)
-    }
-}
-#endif
-
-#if os(tvOS)
-struct TVOnlyView: View {
-    var body: some View {
-        Button("TV Button") {
-            // TV specific action
-        }
-        .font(.title)
         .padding()
     }
 }
-#endif

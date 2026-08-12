@@ -1,90 +1,34 @@
-import SwiftUI
 import Lottie
+import SwiftUI
 
-struct LottieAnimationView: View {
-    @State private var isPlaying = false
-    @State private var animationView: LottieAnimationView?
-    
+// Requires Lottie 4.3 or newer. The host target must include
+// celebration.json (or celebration.lottie) in the intended bundle.
+struct CelebrationAnimationView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var playbackMode: LottiePlaybackMode = .paused
+
     var body: some View {
-        VStack(spacing: 20) {
-            // Lottie Animation Container
-            ZStack {
-                Color.gray.opacity(0.1)
-                    .frame(height: 200)
-                    .cornerRadius(10)
-                
-                if let animationView = animationView {
-                    LottieView(animationView: animationView)
-                        .frame(height: 200)
-                } else {
-                    Text("Loading animation...")
-                        .foregroundColor(.secondary)
-                }
+        VStack(spacing: 16) {
+            if reduceMotion {
+                LottieView(animation: .named("celebration"))
+                    .currentProgress(1)
+                    .accessibilityHidden(true)
+            } else {
+                LottieView(animation: .named("celebration"))
+                    .playbackMode(playbackMode)
+                    .animationDidFinish { _ in
+                        playbackMode = .paused
+                    }
+                    .accessibilityHidden(true)
             }
-            
-            HStack(spacing: 20) {
-                Button(action: {
-                    playAnimation()
-                }) {
-                    Label("Play", systemImage: "play.fill")
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(isPlaying)
-                
-                Button(action: {
-                    stopAnimation()
-                }) {
-                    Label("Stop", systemImage: "stop.fill")
-                }
-                .buttonStyle(.bordered)
-                .disabled(!isPlaying)
-            }
-        }
-        .padding()
-        .onAppear {
-            loadAnimation()
-        }
-    }
-    
-    private func loadAnimation() {
-        // Load animation from bundle (you would add the JSON file to your project)
-        if let animation = LottieAnimation.named("celebration") {
-            animationView = LottieAnimationView(animation: animation)
-            animationView?.loopMode = .playOnce
-        }
-    }
-    
-    private func playAnimation() {
-        isPlaying = true
-        animationView?.play { _ in
-            isPlaying = false
-        }
-    }
-    
-    private func stopAnimation() {
-        animationView?.stop()
-        isPlaying = false
-    }
-}
 
-// UIViewRepresentable wrapper for Lottie
-struct LottieView: UIViewRepresentable {
-    let animationView: LottieAnimationView
-    
-    func makeUIView(context: Context) -> UIView {
-        let view = UIView()
-        view.addSubview(animationView)
-        animationView.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            animationView.topAnchor.constraint(equalTo: view.topAnchor),
-            animationView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            animationView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            animationView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
-        ])
-        return view
-    }
-    
-    func updateUIView(_ uiView: UIView, context: Context) {
-        // Update if needed
+            Button("Celebrate") {
+                guard !reduceMotion else { return }
+                playbackMode = .playing(
+                    .fromProgress(0, toProgress: 1, loopMode: .playOnce)
+                )
+            }
+            .disabled(reduceMotion)
+        }
     }
 }

@@ -1,22 +1,23 @@
 import SwiftUI
 
-struct ToggleView: View {
-    @State private var isOn = false
-    
+struct ToggleExample: View {
+    @State private var usesCalmTheme = false
+
     var body: some View {
         ZStack {
-            (isOn ? Color.blue : Color.gray)
-                .edgesIgnoringSafeArea(.all)
-            
-            VStack {
-                Text(isOn ? "Light Mode" : "Dark Mode")
-                    .foregroundColor(.white)
+            (usesCalmTheme ? Color.blue : Color.gray)
+                .ignoresSafeArea()
+
+            VStack(spacing: 16) {
+                Text(usesCalmTheme ? "Calm theme" : "Neutral theme")
                     .font(.largeTitle)
-                
-                Toggle("Toggle Mode", isOn: $isOn)
+                    .foregroundStyle(.white)
+
+                Toggle("Use calm theme", isOn: $usesCalmTheme)
                     .padding()
-                    .toggleStyle(SwitchToggleStyle(tint: .white))
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
             }
+            .padding()
         }
     }
 }

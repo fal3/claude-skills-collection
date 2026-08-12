@@ -1,412 +1,137 @@
 ---
 name: Cross-Platform App Development Skill
-description: Strategies for developing apps that work across multiple Apple platforms, including adaptive layouts and multi-view implementations.
-version: 1.0
-activation: Activate for queries on cross-platform development, multi-platform apps, adaptive layouts, or device-specific adaptations.
+description: Use when one Swift/SwiftUI product intentionally targets two or more of iOS, iPadOS, Mac Catalyst, macOS, watchOS, tvOS, or visionOS and needs shared-domain design, adaptive UI, capability boundaries, navigation, input, scenes, storage, or conditional compilation. Do not use for a single-platform feature or for non-Apple cross-platform frameworks.
 ---
 
 # Cross-Platform App Development Skill
 
-This skill focuses on building applications that work seamlessly across Apple's ecosystem: iOS, iPadOS, macOS, watchOS, and tvOS. It emphasizes adaptive design, platform-specific optimizations, and shared codebases using SwiftUI.
+Share product behavior and domain logic while preserving each platform's interaction model. “Compiles everywhere” is a starting point, not proof of a good multi-platform experience.
 
-## Best Practices
+## Stable baseline
 
-1. **Unified Codebase**: Use SwiftUI for maximum code sharing across platforms.
+Primary examples use Xcode 15 and Swift 5.9 with these deployment targets:
 
-2. **Adaptive Layouts**: Design interfaces that adapt to different screen sizes and orientations.
+- iOS/iPadOS/Mac Catalyst 17
+- macOS 14
+- watchOS 10
+- tvOS 17
+- visionOS 1
 
-3. **Platform-Specific Features**: Leverage unique capabilities of each platform while maintaining consistency.
+The same architecture can support older systems, but APIs must be checked and gated at the real minimum. `NavigationStack`, `NavigationSplitView`, and `ViewThatFits` begin with the iOS 16/macOS 13/tvOS 16/watchOS 9 generation; visionOS starts at 1.0. OS 27-cycle APIs are beta relative to stable Xcode 26.6 and require explicit user intent, beta labeling, a stable fallback, and availability checks.
 
-4. **Environment Awareness**: Use environment values to detect platform, size classes, and capabilities.
+## Start with a target matrix
 
-5. **Progressive Enhancement**: Start with core functionality and add platform-specific features.
+Record this before generating code:
 
-6. **Testing Across Platforms**: Regularly test on all target platforms.
+| Target | Minimum | Window model | Primary input | Navigation | Persistence/sync | Key capabilities |
+|---|---:|---|---|---|---|---|
+| iPhone/iPad | project-specific | scenes, multitasking | touch, pencil, keyboard | stack or split | local and/or cloud | cameras, sensors, share extensions |
+| Mac Catalyst | project-specific | UIKit scenes/windows | pointer, keyboard | split/window-aware | iOS-compatible stores | Catalyst availability gaps |
+| macOS | project-specific | multiwindow, documents, menus | pointer, keyboard | split, tables, windows | sandbox-aware | commands, files, services |
+| watchOS | project-specific | glanceable scenes | touch, Crown, gestures | shallow stack | paired/cloud strategy | complications, workouts |
+| tvOS | project-specific | full-screen scenes | focus, remote | focus-driven stack | cloud-first; local caches are purgeable | media playback |
+| visionOS | project-specific | windows, volumes, immersive spaces | eyes, hands, pointer | spatially appropriate | local and/or cloud | ornaments, immersion |
 
-## Cross-Platform Guidelines
+Do not infer capability from screen width alone, and do not infer iPad from a regular size class. Windows resize, multitasking changes size classes, and macOS may report no horizontal size class.
 
-- Use SwiftUI's built-in adaptive components (NavigationView, TabView, etc.)
-- Leverage @Environment to access platform-specific information
-- Implement custom view modifiers for platform-specific styling
-- Use conditional compilation when necessary (#if os(iOS))
-- Design for both mouse/keyboard and touch interactions
-- Consider different input methods (remote control, watch crown, etc.)
+## Architecture boundary
 
-## Examples
+Prefer this dependency direction:
 
-### Example 1: Adaptive Layout with Size Classes
+1. Shared domain models and pure business rules.
+2. Shared protocols for capabilities such as sharing, file selection, haptics, or playback.
+3. Platform implementations in their target modules.
+4. SwiftUI features that consume capabilities through initializers or environment values.
+5. Thin platform scenes, commands, menus, and lifecycle adapters.
 
-**User Prompt:** "Create an adaptive layout that works on both iPhone and iPad."
+Use a Swift package for truly shared code when its platform declarations and dependencies match every consumer. Keep UIKit, AppKit, WatchKit, TVUIKit, and RealityKit imports out of the shared domain target.
 
-**Expected Output:**
-```swift
-import SwiftUI
+## Adaptation tools
 
-struct AdaptiveContentView: View {
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    
-    var body: some View {
-        Group {
-            if horizontalSizeClass == .compact {
-                // iPhone portrait or small screens
-                VStack {
-                    HeaderView()
-                    ContentListView()
-                    FooterView()
-                }
-            } else {
-                // iPad or wide screens
-                HStack {
-                    SidebarView()
-                    VStack {
-                        HeaderView()
-                        ContentListView()
-                    }
-                    DetailView()
-                }
-            }
-        }
-    }
-}
+Use them in this order:
 
-struct HeaderView: View {
-    var body: some View {
-        Text("App Header")
-            .font(.largeTitle)
-            .padding()
-    }
-}
+1. Semantic SwiftUI controls that adapt automatically.
+2. Flexible layout, `ViewThatFits`, grids, and environment values for runtime conditions.
+3. Capability protocols when behavior differs but the feature contract is shared.
+4. `#available` when an API differs by OS version.
+5. `#if os(...)` or `#if targetEnvironment(macCatalyst)` only when code truly cannot compile for another target.
 
-struct ContentListView: View {
-    var body: some View {
-        List(1...10, id: \.self) { item in
-            Text("Item \(item)")
-        }
-    }
-}
+Compile-time checks cannot represent runtime states such as compact windows, pointer availability, Reduce Motion, or current scene phase.
 
-struct SidebarView: View {
-    var body: some View {
-        Text("Sidebar")
-            .frame(width: 200)
-            .background(Color.gray.opacity(0.2))
-    }
-}
+See [the adaptive layout](examples/example_adaptive_layout.swift) and [platform-specific implementation](examples/example_platform_specific.swift).
 
-struct DetailView: View {
-    var body: some View {
-        Text("Detail View")
-            .frame(maxWidth: .infinity)
-            .background(Color.blue.opacity(0.1))
-    }
-}
+## Navigation
 
-struct FooterView: View {
-    var body: some View {
-        Text("Footer")
-            .padding()
-    }
-}
-```
+- Use `NavigationSplitView` for iPad, Mac Catalyst, macOS, and visionOS experiences that genuinely have sidebar/content/detail structure.
+- Let the split view collapse on compact iOS instead of maintaining a separate device-name branch when the workflow is the same.
+- Use `NavigationStack` for watchOS, tvOS, and shallow or linear flows.
+- Pass the selected value to the destination. Do not construct `DetailView()` when its initializer requires an item.
+- Keep `.sidebar` and other platform-specific styles inside supported branches.
+- Model routes and selections with stable `Hashable` values so deep links and restoration can be tested.
 
-### Example 2: Platform-Specific Code
+See [the complete adaptive navigation example](examples/example_adaptive_navigation.swift).
 
-**User Prompt:** "How do I implement platform-specific features in a shared SwiftUI codebase?"
+## Platform experience checklist
 
-**Expected Output:**
-```swift
-import SwiftUI
+### iOS, iPadOS, and Catalyst
 
-struct CrossPlatformView: View {
-    var body: some View {
-        VStack {
-            Text("Shared Content")
-            
-            #if os(iOS)
-            iOSOnlyView()
-            #elseif os(macOS)
-            MacOnlyView()
-            #elseif os(watchOS)
-            WatchOnlyView()
-            #elseif os(tvOS)
-            TVOnlyView()
-            #endif
-        }
-    }
-}
+- Test rotation, Stage Manager, Split View, external keyboards, pointer use, drag and drop, and multiple scenes when supported.
+- Treat Catalyst as its own target environment for availability and UX; an iPad layout is not automatically a Mac experience.
 
-#if os(iOS)
-struct iOSOnlyView: View {
-    var body: some View {
-        Button("iOS Specific Button") {
-            // iOS specific action
-        }
-        .buttonStyle(.borderedProminent)
-    }
-}
-#endif
+### macOS
 
-#if os(macOS)
-struct MacOnlyView: View {
-    var body: some View {
-        Button("macOS Specific Button") {
-            // macOS specific action
-        }
-        .buttonStyle(.bordered)
-    }
-}
-#endif
+- Design window sizes, commands, menus, keyboard shortcuts, focus, tables/inspectors, file access, sandboxing, and restoration.
+- Prefer macOS scenes and commands over placing every action in an iOS-style toolbar.
 
-#if os(watchOS)
-struct WatchOnlyView: View {
-    var body: some View {
-        Text("WatchOS Interface")
-            .font(.caption)
-    }
-}
-#endif
+### watchOS
 
-#if os(tvOS)
-struct TVOnlyView: View {
-    var body: some View {
-        Button("TV Button") {
-            // TV specific action
-        }
-        .font(.title)
-        .padding()
-    }
-}
-#endif
-```
+- Keep tasks glanceable and navigation shallow. Test Digital Crown focus, Always On behavior, background limits, complications, and Watch Connectivity failure modes.
 
-### Example 3: Environment-Based Adaptations
+### tvOS
 
-**User Prompt:** "Adapt a view based on the current platform and color scheme using environment values."
+- Test Focus Engine movement and remote input on every screen. Avoid touch-only gestures and hover assumptions.
+- Treat local files as a cache, not the sole durable copy of user data.
 
-**Expected Output:**
-```swift
-import SwiftUI
+### visionOS
 
-struct EnvironmentAdaptiveView: View {
-    @Environment(\.colorScheme) private var colorScheme
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    
-    var body: some View {
-        ZStack {
-            (colorScheme == .dark ? Color.black : Color.white)
-                .edgesIgnoringSafeArea(.all)
-            
-            VStack(spacing: platformSpacing) {
-                Text(platformTitle)
-                    .font(platformFont)
-                    .foregroundColor(colorScheme == .dark ? .white : .black)
-                
-                HStack(spacing: horizontalSizeClass == .compact ? 10 : 20) {
-                    ForEach(0..<3) { index in
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(Color.blue.opacity(0.3))
-                            .frame(width: itemWidth, height: itemHeight)
-                            .overlay(
-                                Text("Item \(index + 1)")
-                                    .foregroundColor(.primary)
-                            )
-                    }
-                }
-            }
-            .padding()
-        }
-    }
-    
-    private var platformTitle: String {
-        #if os(iOS)
-        return "iOS App"
-        #elseif os(macOS)
-        return "macOS App"
-        #elseif os(watchOS)
-        return "watchOS App"
-        #elseif os(tvOS)
-        return "tvOS App"
-        #else
-        return "Cross-Platform App"
-        #endif
-    }
-    
-    private var platformFont: Font {
-        #if os(watchOS)
-        return .headline
-        #elseif os(tvOS)
-        return .largeTitle
-        #else
-        return .title
-        #endif
-    }
-    
-    private var platformSpacing: CGFloat {
-        #if os(watchOS)
-        return 8
-        #else
-        return 20
-        #endif
-    }
-    
-    private var itemWidth: CGFloat {
-        horizontalSizeClass == .compact ? 80 : 120
-    }
-    
-    private var itemHeight: CGFloat {
-        #if os(watchOS)
-        return 40
-        #else
-        return horizontalSizeClass == .compact ? 80 : 100
-        #endif
-    }
-}
-```
+- Choose windows, volumes, and immersive spaces deliberately. Preserve comfort, accessibility, and a non-immersive route to essential tasks.
 
-### Example 4: Navigation Adaptations
+## State, storage, and sync
 
-**User Prompt:** "Implement navigation that adapts to different platforms automatically."
+- Share domain state only when semantics match; keep presentation and navigation state local to each scene.
+- Define the source of truth, offline behavior, merge policy, account changes, and conflict UX before sharing a store.
+- Check each persistence framework and model feature on every target. “Swift code” does not imply identical framework availability.
+- Use App Groups only for processes that need shared containers and configure entitlements per target.
+- Test schema migration and downgrade/rollback scenarios with real prior stores.
 
-**Expected Output:**
-```swift
-import SwiftUI
+## Input, focus, and accessibility
 
-struct AdaptiveNavigationView: View {
-    var body: some View {
-        #if os(macOS)
-        NavigationView {
-            SidebarList()
-            DetailView()
-        }
-        .frame(minWidth: 800, minHeight: 600)
-        #else
-        NavigationView {
-            SidebarList()
-            DetailView()
-        }
-        .navigationViewStyle(.stack) // For iOS, ensures stack navigation
-        #endif
-    }
-}
+- Every essential action needs an appropriate path for touch, pointer, keyboard, focus engine, Digital Crown, and spatial input on its target.
+- Use semantic controls so VoiceOver and other assistive technologies inherit roles and actions.
+- Test Dynamic Type, focus order, reduced motion, contrast, and platform-specific accessibility features separately on each target.
+- Do not hide platform-critical controls solely to maximize source sharing.
 
-struct SidebarList: View {
-    @State private var selectedItem: String?
-    
-    var body: some View {
-        List(selection: $selectedItem) {
-            ForEach(["Item 1", "Item 2", "Item 3"], id: \.self) { item in
-                NavigationLink(destination: DetailView(item: item)) {
-                    Text(item)
-                }
-            }
-        }
-        .listStyle(.sidebar)
-        .navigationTitle("Items")
-    }
-}
+## Scenes, commands, and lifecycle
 
-struct DetailView: View {
-    let item: String?
-    
-    var body: some View {
-        ZStack {
-            Color.gray.opacity(0.1)
-                .edgesIgnoringSafeArea(.all)
-            
-            VStack {
-                if let item = item {
-                    Text("Detail for \(item)")
-                        .font(.largeTitle)
-                } else {
-                    Text("Select an item")
-                        .font(.title)
-                        .foregroundColor(.secondary)
-                }
-            }
-        }
-        .navigationTitle(item ?? "Detail")
-    }
-}
-```
+- Handle `scenePhase`, background work, restoration, and external events per target.
+- Model macOS menus/commands and multiwindow behavior outside a phone-first root view.
+- Keep watch complications, widgets, Live Activities, and spatial immersive scenes in target-specific modules with shared domain inputs.
 
-### Example 5: GeometryReader for Dynamic Layouts
+## Validation matrix
 
-**User Prompt:** "Use GeometryReader to create a layout that adapts to available space."
+For every supported target:
 
-**Expected Output:**
-```swift
-import SwiftUI
+1. Compile at the declared minimum with warnings treated seriously.
+2. Run unit tests for the shared domain package.
+3. Run navigation and restoration tests for target-specific shells.
+4. Exercise narrow and wide windows plus relevant input devices.
+5. Test offline, sync conflict, background/foreground, memory pressure, and accessibility states.
 
-struct GeometryAdaptiveView: View {
-    var body: some View {
-        GeometryReader { geometry in
-            VStack {
-                Text("Available width: \(Int(geometry.size.width))")
-                Text("Available height: \(Int(geometry.size.height))")
-                
-                if geometry.size.width > geometry.size.height {
-                    // Landscape or wide layout
-                    HStack {
-                        Rectangle()
-                            .fill(Color.red.opacity(0.3))
-                            .frame(width: geometry.size.width * 0.4, height: 100)
-                        
-                        Rectangle()
-                            .fill(Color.blue.opacity(0.3))
-                            .frame(width: geometry.size.width * 0.4, height: 100)
-                    }
-                } else {
-                    // Portrait or narrow layout
-                    VStack {
-                        Rectangle()
-                            .fill(Color.red.opacity(0.3))
-                            .frame(width: geometry.size.width * 0.8, height: 100)
-                        
-                        Rectangle()
-                            .fill(Color.blue.opacity(0.3))
-                            .frame(width: geometry.size.width * 0.8, height: 100)
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-    }
-}
+Do not claim cross-platform readiness when only one SDK target compiled.
 
-// Advanced example: Multi-column layout
-struct MultiColumnView: View {
-    let items = Array(1...20)
-    
-    var body: some View {
-        GeometryReader { geometry in
-            ScrollView {
-                LazyVGrid(columns: adaptiveColumns(for: geometry.size.width), spacing: 16) {
-                    ForEach(items, id: \.self) { item in
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.blue.opacity(0.2))
-                                .frame(height: 100)
-                            
-                            Text("Item \(item)")
-                                .font(.headline)
-                        }
-                    }
-                }
-                .padding()
-            }
-        }
-    }
-    
-    private func adaptiveColumns(for width: CGFloat) -> [GridItem] {
-        if width > 800 {
-            return Array(repeating: GridItem(.flexible(), spacing: 16), count: 4)
-        } else if width > 600 {
-            return Array(repeating: GridItem(.flexible(), spacing: 16), count: 3)
-        } else if width > 400 {
-            return Array(repeating: GridItem(.flexible(), spacing: 16), count: 2)
-        } else {
-            return [GridItem(.flexible())]
-        }
-    }
-}
-```
+## Resources
+
+- [Adaptive layout example](examples/example_adaptive_layout.swift)
+- [Conditional platform implementation](examples/example_platform_specific.swift)
+- [Adaptive navigation example](examples/example_adaptive_navigation.swift)
+- [Cross-platform prompt scenarios](examples/prompts.md)

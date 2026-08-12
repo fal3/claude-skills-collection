@@ -1,31 +1,19 @@
-# Example Prompts for SpeechAnalyzer Framework Expert
+# Example prompts
 
-## Prompt 1: Basic Setup
-"Show me how to set up SpeechAnalyzer with SpeechTranscriber for English transcription."
+## Should activate
 
-## Prompt 2: Audio Buffer Conversion
-"How do I convert AVAudioPCMBuffer to the format required by SpeechAnalyzer?"
+- "Prepare SpeechTranscriber assets for the user’s locale and release only my reservation."
+- "Transcribe an audio file with SpeechAnalyzer on macOS 26."
+- "Build live iOS 26 microphone transcription with permission and audio-session handling."
+- "Show volatile text separately and append only finalized SpeechTranscriber results."
+- "Observe an AssetInstallationRequest download with Foundation Progress."
+- "Handle a nil bestAvailableAudioFormat result without crashing."
+- "Choose a locale with supportedLocale(equivalentTo:) and fall back when the device lacks SpeechTranscriber."
+- "Migrate this SFSpeechRecognizer flow to SpeechAnalyzer while preserving a lower-OS path."
+- "Review this audio converter for route changes and Swift 6 concurrency safety."
 
-## Prompt 3: Real-Time Transcription
-"Create a complete example that captures microphone audio and transcribes it in real-time."
+## Should not activate
 
-## Prompt 4: Locale Management
-"How do I check which languages are supported and download models for a specific locale?"
-
-## Prompt 5: Error Handling
-"What are common errors when using SpeechAnalyzer and how do I handle them?"
-
-## Prompt 6: Migration from WhisperKit
-"Help me migrate my WhisperKit transcription code to use the new Speech framework."
-
-## Prompt 7: File Transcription
-"How can I transcribe an audio file using SpeechAnalyzer instead of microphone input?"
-
-## Prompt 8: Performance Optimization
-"What are best practices for optimizing SpeechAnalyzer performance for long audio sessions?"
-
-## Prompt 9: SwiftUI Integration
-"Create a SwiftUI view that shows live transcription with both volatile and final results."
-
-## Prompt 10: Multi-Language Support
-"How do I allow users to switch between different languages during transcription?"
+- "Add speech recognition to a watchOS-only target."
+- "Use SFSpeechRecognizer on iOS 17 with no SpeechAnalyzer migration."
+- "Analyze a prerecorded video that contains no speech-transcription requirement."

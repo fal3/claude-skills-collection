@@ -1,33 +1,23 @@
 # iOS Animation Graphics Skill
 
-This skill provides expertise in creating smooth animations and custom graphics for iOS applications using SwiftUI Canvas, Core Animation, and Lottie integration.
+Use this skill for accessible SwiftUI animation, Canvas drawing, Core Animation bridges, and Lottie playback.
 
-## Activation
+## Minimums vary by technique
 
-This skill activates automatically for queries related to:
-- SwiftUI animation techniques
-- Canvas-based custom graphics
-- Lottie animation integration
-- Core Animation with UIViewRepresentable
-- Performance-optimized animations
-- Interactive graphics and drawings
+- Canvas and TimelineView: iOS 15 / macOS 12.
+- Matched geometry: iOS 14 / macOS 11.
+- PhaseAnimator, KeyframeAnimator, and initial symbol effects: iOS 17 / macOS 14.
+- Selected navigation and UIKit/AppKit animation bridges: iOS 18 / macOS 15.
+- Native Lottie SwiftUI view: Lottie 4.3+. Pin a version and follow its package manifest; Lottie 4.6 requires Xcode 16 / Swift 6.
 
-## Setup
-
-To use this skill effectively:
-
-1. Familiarize yourself with SwiftUI's animation system and built-in modifiers.
-2. Learn Canvas API for custom drawing and graphics.
-3. Add Lottie-iOS via Swift Package Manager for complex animations.
-4. Test animations on physical devices for accurate performance assessment.
+Always state the minimum for the chosen implementation and gate newer alternatives.
 
 ## Examples
 
-See the `examples/` directory for sample code and prompts demonstrating animation and graphics techniques.
+- `example_canvas_waveform.swift`: TimelineView-driven Canvas animation with a static Reduce Motion result.
+- `example_gradient_border.swift`: layer geometry updated after layout, with idempotent playback.
+- `example_lottie_animation.swift`: declarative playback without type-name collisions.
 
-## Resources
+Every looping or autoplaying effect needs a Reduce Motion policy and a lifecycle stop condition. Profile animation on physical supported hardware when performance matters.
 
-- [SwiftUI Animation Documentation](https://developer.apple.com/documentation/swiftui/animation)
-- [Canvas API Guide](https://developer.apple.com/documentation/swiftui/canvas)
-- [Lottie for iOS](https://github.com/airbnb/lottie-ios)
-- [Core Animation Programming Guide](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/CoreAnimation_guide/)
+Resources: [SwiftUI animation](https://developer.apple.com/documentation/swiftui/animation), [Canvas](https://developer.apple.com/documentation/swiftui/canvas), [TimelineView](https://developer.apple.com/documentation/swiftui/timelineview), and [Lottie iOS](https://github.com/airbnb/lottie-ios).

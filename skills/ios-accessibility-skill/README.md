@@ -1,32 +1,28 @@
 # iOS Accessibility Skill
 
-This skill provides guidance on implementing accessibility features in iOS apps, ensuring compliance with Apple's Human Interface Guidelines and making apps usable for all users.
+Implementation and review guidance for VoiceOver, Voice Control, Switch Control, Full Keyboard Access, Dynamic Type, visual and motion settings, media alternatives, cognitive accessibility, and Assistive Access.
 
-## Activation
+## When it applies
 
-This skill activates automatically for queries related to:
-- iOS accessibility implementation
-- VoiceOver support and configuration
-- Dynamic Type and scalable text
-- Color contrast and visual accessibility
-- Motor impairment accommodations
-- Testing accessibility features
+Use it for iOS/iPadOS accessibility work. Do not activate it for generic visual styling with no accessibility question.
 
-## Setup
+## Compatibility
 
-To use this skill effectively:
+Examples use Xcode 15, Swift 5.9, and iOS/iPadOS 17. The skill calls out newer availability: the Assistive Access environment value starts at iOS 18, while the dedicated SwiftUI scene is an iOS 26 API. OS 27-cycle APIs are beta unless a user explicitly requests them.
 
-1. Enable VoiceOver on your device (Settings > Accessibility > VoiceOver) for testing.
-2. Familiarize yourself with Accessibility Inspector in Xcode.
-3. Review Apple's [Accessibility Guidelines](https://developer.apple.com/design/human-interface-guidelines/accessibility/overview/introduction/).
-4. Test your app with various accessibility settings enabled.
+## Contents
 
-## Examples
+- [Skill guidance](SKILL.md)
+- [VoiceOver example](examples/example_voiceover.swift)
+- [Dynamic Type example](examples/example_dynamic_type.swift)
+- [Prompt scenarios](examples/prompts.md)
 
-See the `examples/` directory for sample code and prompts demonstrating accessibility implementations.
+## Validation
 
-## Resources
+Use Accessibility Inspector as a starting point, then test important flows with the actual assistive technologies on device. Automated checks do not validate reading order, comprehensibility, focus recovery, or task completion.
 
-- [Apple Accessibility Documentation](https://developer.apple.com/accessibility/)
-- [Accessibility Inspector Guide](https://developer.apple.com/library/archive/documentation/DeveloperTools/Conceptual/AccessibilityInspector/)
-- [WWDC Sessions on Accessibility](https://developer.apple.com/videos/accessibility/)
+## Official resources
+
+- [Accessibility for Apple platforms](https://developer.apple.com/accessibility/)
+- [SwiftUI accessibility](https://developer.apple.com/documentation/swiftui/accessibility)
+- [Human Interface Guidelines: Accessibility](https://developer.apple.com/design/human-interface-guidelines/accessibility)

@@ -1,70 +1,41 @@
-import XCTest
-@testable import MyApp
+import Testing
 
-class CalculatorTests: XCTestCase {
-    
-    var calculator: Calculator!
-    
-    override func setUp() {
-        super.setUp()
-        calculator = Calculator()
+// Standalone teaching fixture. In an app, put this type in the production
+// module and replace it here with `@testable import AppModule`.
+enum SampleCalculator {
+    static func divide(_ numerator: Int, by denominator: Int) throws -> Int {
+        guard denominator != 0 else { throw CalculationError.divisionByZero }
+        return numerator / denominator
     }
-    
-    override func tearDown() {
-        calculator = nil
-        super.tearDown()
-    }
-    
-    func testAddition() {
-        // Given
-        let a = 5
-        let b = 3
-        
-        // When
-        let result = calculator.add(a, b)
-        
-        // Then
-        XCTAssertEqual(result, 8, "Addition should return the sum of two numbers")
-    }
-    
-    func testAdditionWithNegativeNumbers() {
-        // Given
-        let a = 5
-        let b = -3
-        
-        // When
-        let result = calculator.add(a, b)
-        
-        // Then
-        XCTAssertEqual(result, 2, "Addition should work with negative numbers")
-    }
-    
-    func testDivisionByZero() {
-        // Given
-        let a = 10
-        let b = 0
-        
-        // When & Then
-        XCTAssertThrowsError(try calculator.divide(a, b)) { error in
-            XCTAssertEqual(error as? CalculatorError, CalculatorError.divisionByZero)
-        }
+
+    enum CalculationError: Error, Equatable {
+        case divisionByZero
     }
 }
 
-// Production code
-class Calculator {
-    func add(_ a: Int, _ b: Int) -> Int {
-        return a + b
+@Suite("Integer division")
+struct SampleCalculatorTests {
+    @Test("Returns the integer quotient", arguments: [
+        (numerator: 12, denominator: 3, expected: 4),
+        (numerator: 9, denominator: 2, expected: 4),
+        (numerator: -8, denominator: 2, expected: -4),
+    ])
+    func quotient(example: (numerator: Int, denominator: Int, expected: Int)) throws {
+        let value = try SampleCalculator.divide(example.numerator, by: example.denominator)
+        #expect(value == example.expected)
     }
-    
-    func divide(_ a: Int, _ b: Int) throws -> Int {
-        guard b != 0 else {
-            throw CalculatorError.divisionByZero
-        }
-        return a / b
-    }
-}
 
-enum CalculatorError: Error {
-    case divisionByZero
+    @Test("Rejects a zero denominator")
+    func zeroDenominator() {
+        #expect(throws: SampleCalculator.CalculationError.divisionByZero) {
+            try SampleCalculator.divide(1, by: 0)
+        }
+    }
+
+    @Test("A required optional stops dependent assertions")
+    func requireExample() throws {
+        let values = [2, 4, 6]
+        let first = try #require(values.first)
+        #expect(first.isMultiple(of: 2))
+    }
 }

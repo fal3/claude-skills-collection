@@ -1,63 +1,65 @@
+import AVFoundation
+import Foundation
 import Speech
 
-/// Example: Basic SpeechAnalyzer setup with SpeechTranscriber
-/// Demonstrates the critical 8-step setup sequence
-@MainActor
-class TranscriptionManager {
-    private var transcriber: SpeechTranscriber?
-    private var analyzer: SpeechAnalyzer?
-    private var inputContinuation: AsyncStream<AnalyzerInput>.Continuation?
+enum SpeechPreparationFailure: LocalizedError, Sendable {
+    case transcriberUnavailable
+    case unsupportedLocale(String)
+    case noCompatibleAudioFormat
 
-    func setupTranscription() async throws {
-        let locale = Locale(identifier: "en-US")
+    var errorDescription: String? {
+        switch self {
+        case .transcriberUnavailable:
+            "SpeechTranscriber is unavailable on this device."
+        case .unsupportedLocale(let identifier):
+            "No supported speech locale is equivalent to \(identifier)."
+        case .noCompatibleAudioFormat:
+            "No installed audio format is compatible with the transcriber."
+        }
+    }
+}
 
-        // Step 1: Create transcriber
-        let transcriber = SpeechTranscriber(
-            locale: locale,
-            transcriptionOptions: [],
-            reportingOptions: [.volatileResults],
-            attributeOptions: [.audioTimeRange]
-        )
+@available(macOS 26.0, iOS 26.0, visionOS 26.0, tvOS 26.0, *)
+@available(watchOS, unavailable)
+func withPreparedSpeechTranscriber<Result: Sendable>(
+    requestedLocale: Locale,
+    operation: @Sendable (SpeechTranscriber, AVAudioFormat) async throws -> Result
+) async throws -> Result {
+    guard SpeechTranscriber.isAvailable else {
+        throw SpeechPreparationFailure.transcriberUnavailable
+    }
+    guard let locale = await SpeechTranscriber.supportedLocale(
+        equivalentTo: requestedLocale
+    ) else {
+        throw SpeechPreparationFailure.unsupportedLocale(requestedLocale.identifier)
+    }
 
-        // Step 2: Download model if needed
+    let createdReservation = try await AssetInventory.reserve(locale: locale)
+
+    do {
+        let transcriber = SpeechTranscriber(locale: locale, preset: .progressiveTranscription)
+
         if let request = try await AssetInventory.assetInstallationRequest(
             supporting: [transcriber]
         ) {
             try await request.downloadAndInstall()
         }
 
-        // Step 3: CRITICAL - Allocate locale AFTER download
-        try await transcriber.allocate(locale: locale)
-
-        // Step 4: Create analyzer
-        let analyzer = SpeechAnalyzer(modules: [transcriber])
-
-        // Step 5: Get best format
-        let format = await SpeechAnalyzer.bestAvailableAudioFormat(
+        guard let format = await SpeechAnalyzer.bestAvailableAudioFormat(
             compatibleWith: [transcriber]
-        )
-        print("Best format: \(format)")
-
-        // Step 6: Create AsyncStream for input
-        let (inputSequence, inputBuilder) = AsyncStream<AnalyzerInput>.makeStream()
-        self.inputContinuation = inputBuilder
-
-        // Step 7: Start analyzer
-        try await analyzer.start(inputSequence: inputSequence)
-
-        // Store references
-        self.transcriber = transcriber
-        self.analyzer = analyzer
-
-        // Step 8: Start consuming results
-        Task {
-            for try await result in transcriber.results {
-                if result.isFinal {
-                    print("Final: \(result.transcription)")
-                } else {
-                    print("Live: \(result.transcription)")
-                }
-            }
+        ) else {
+            throw SpeechPreparationFailure.noCompatibleAudioFormat
         }
+
+        let value = try await operation(transcriber, format)
+        if createdReservation {
+            await AssetInventory.release(reservedLocale: locale)
+        }
+        return value
+    } catch {
+        if createdReservation {
+            await AssetInventory.release(reservedLocale: locale)
+        }
+        throw error
     }
 }
