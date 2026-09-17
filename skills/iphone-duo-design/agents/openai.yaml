@@ -1,0 +1,4 @@
+interface:
+  display_name: "iPhone Duo Design"
+  short_description: "Design and verify adaptive iPhone Duo experiences"
+  default_prompt: "Use $iphone-duo-design to review this app for iPhone Duo and implement supported fixes with explicit SDK gates, fallbacks, and verification evidence."
