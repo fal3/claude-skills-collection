@@ -1,12 +1,12 @@
 # AGENTS.md
 
-This file provides guidance to Codex when working with code in this repository.
+This file contains shared repository guidance for any coding agent or contributor. Host-specific entry points refer here; the skill content does not depend on a particular agent.
 
-## Repository Overview
+## Repository overview
 
 This repository is a skills collection focused on Swift and iOS development. Each skill is a self-contained directory with a `SKILL.md`, a user-facing `README.md`, and supporting examples or reference material.
 
-## Skills in This Repo
+## Skills in this repo
 
 - `swiftui-programming-skill` - SwiftUI declarative UI development
 - `swift-modern-architecture-skill` - Swift 6 and iOS 18+ architecture patterns
@@ -21,8 +21,9 @@ This repository is a skills collection focused on Swift and iOS development. Eac
 - `swiftdata-core-data-migrations` - SwiftData and Core Data schema, store, and coexistence migrations
 - `app-intents-widgets` - App Intents, App Shortcuts, WidgetKit, and system-surface integration
 
-## Working Conventions
+## Working conventions
 
+- Keep core instructions independent of host tool names, slash commands, plugins, and machine-specific paths. Put host setup in `docs/agent-compatibility.md` or packaging metadata. Describe file reads and validation in terms any capable agent can follow.
 - Keep skill changes scoped: update only the relevant skill folder unless a cross-cutting fix is required.
 - Preserve each skill structure: `SKILL.md`, `README.md`, and supporting content in `examples/`, `docs/`, or `references/` as appropriate.
 - Prefer modern Swift patterns in examples (Swift Concurrency, Observation, SwiftData when appropriate).
@@ -31,17 +32,17 @@ This repository is a skills collection focused on Swift and iOS development. Eac
 - Use lowercase kebab-case for new skill directory names. Do not rename an existing published skill without a compatibility and migration plan.
 - When adding, removing, or renaming a skill, update the inventories or structural guidance in `AGENTS.md`, `CLAUDE.md`, `CODEX.md`, and `README.md`, plus plugin metadata when its description or version is affected.
 
-## Adding or Updating Skills
+## Adding or updating skills
 
 When adding a new skill, follow the same pattern used by existing skills:
 
 1. Create `skills/<skill-name>/SKILL.md` with valid YAML frontmatter containing only `name` and `description`. Put positive triggers, exclusions, and scope boundaries in `description` because hosts use it for implicit activation.
 2. Add `skills/<skill-name>/README.md` for user-facing documentation.
 3. Add practical examples under `skills/<skill-name>/examples/`, or use `docs/` and `references/` when the skill is primarily a reference package.
-4. Add `skills/<skill-name>/agents/openai.yaml` for portable UI metadata; its default prompt should name `$<skill-name>`.
+4. Add `skills/<skill-name>/agents/openai.yaml` for optional OpenAI host UI metadata; its default prompt should name `$<skill-name>`.
 5. Keep guidance concise, keep `SKILL.md` under 500 lines, and avoid duplicating large sections between files.
 
-## Validation Checklist
+## Validation checklist
 
 - Confirm `SKILL.md` frontmatter parses and contains exactly `name` and `description`.
 - Confirm descriptions explain both when the skill should and should not activate.
@@ -49,4 +50,5 @@ When adding a new skill, follow the same pattern used by existing skills:
 - Verify internal links and referenced files exist.
 - Review Swift snippets against the minimum versions declared by that skill; use a temporary project when compilation matters and no shared build project exists.
 - Check repository-level skill inventories whenever the set of skills changes.
-- Run the repository validators and `git diff --check` before handing off changes.
+- Run `python3 -m unittest discover -s tests -p 'test_*.py'`, `ruby scripts/validate_skills.rb`, and `git diff --check` before handing off changes. Run `bash scripts/typecheck_examples.sh` when Swift examples change, using the declared Apple toolchain.
+- Keep installation code compatible with Python 3.9 or later and test path, conflict, update, and rollback behavior. Preserve existing published identifiers; normalize only installed copies when a host requires strict names.
