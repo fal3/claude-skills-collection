@@ -1,7 +1,6 @@
 ---
 name: swiftdata-core-data-migrations
-description: >-
-  Design, implement, diagnose, and test production schema migrations for SwiftData and Core Data, including VersionedSchema snapshots, SchemaMigrationPlan stages, lightweight and custom Core Data mappings, gradual adoption, CloudKit constraints, and forward-recovery planning. Use when a persistent model changes, an existing store must upgrade without data loss, a team is choosing between SwiftData and Core Data for migration requirements, or copied production stores need validation. Do not use for ordinary fetch/query code, transient in-memory model transformations, unrelated file-format migrations, or advice that assumes Core Data should be replaced merely because SwiftData exists.
+description: Design, implement, diagnose, and test production schema migrations for SwiftData and Core Data, including VersionedSchema snapshots, SchemaMigrationPlan stages, lightweight and custom Core Data mappings, gradual adoption, CloudKit constraints, and forward-recovery planning. Use when a persistent model changes, an existing store must upgrade without data loss, a team is choosing between SwiftData and Core Data for migration requirements, or copied production stores need validation. Do not use for ordinary fetch/query code, transient in-memory model transformations, unrelated file-format migrations, or advice that assumes Core Data should be replaced merely because SwiftData exists.
 ---
 
 # SwiftData and Core Data Migrations

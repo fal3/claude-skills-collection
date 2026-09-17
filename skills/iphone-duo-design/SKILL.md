@@ -1,12 +1,6 @@
 ---
 name: iphone-duo-design
-description: >-
-  Use when designing, adapting, implementing, or auditing an iOS app for iPhone
-  Duo, including resizing, folding, vertical bars, reserved regions, state
-  continuity, multiple scenes, camera behavior, and accessibility. Produce
-  evidence-based readiness findings with SDK gates and fallbacks. Do not use
-  for generic iPhone work without Duo or adaptive-layout requirements, Android
-  foldables, Microsoft Surface Duo, Google Duo, or claims of Apple certification.
+description: Use when designing, adapting, implementing, or auditing an iOS app for iPhone Duo, including resizing, folding, vertical bars, reserved regions, state continuity, multiple scenes, camera behavior, and accessibility. Produce evidence-based readiness findings with SDK gates and fallbacks. Do not use for generic iPhone work without Duo or adaptive-layout requirements, Android foldables, Microsoft Surface Duo, Google Duo, or claims of Apple certification.
 ---
 
 # iPhone Duo design and readiness
