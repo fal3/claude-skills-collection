@@ -107,6 +107,10 @@ while IFS= read -r file; do
       typecheck_file "$file" iphonesimulator arm64-apple-ios17.0-simulator
       typecheck_file "$file" macosx arm64-apple-macosx14.0
       ;;
+    skills/iphone-duo-design/examples/AdaptiveEditor.swift)
+      typecheck_file "$file" iphonesimulator arm64-apple-ios17.0-simulator
+      typecheck_file "$file" iphoneos arm64-apple-ios17.0
+      ;;
     skills/swift-SpeechAnalyzer-Framework-Expert/examples/*)
       if [[ "$relative" == "skills/swift-SpeechAnalyzer-Framework-Expert/examples/live_transcription.swift" ]]; then
         typecheck_file \

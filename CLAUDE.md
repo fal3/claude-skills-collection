@@ -37,6 +37,7 @@ skills/<skill-name>/
 10. **swift-concurrency-migration** - Swift 6 concurrency migration and compiler-diagnostic workflows
 11. **swiftdata-core-data-migrations** - Safe SwiftData and Core Data schema/store migrations
 12. **app-intents-widgets** - App Intents, App Shortcuts, WidgetKit, and system surfaces
+13. **iphone-duo-design** - Adaptive iPhone Duo design, state continuity, scenes, camera, and readiness verification
 
 ## Working with Skills
 
