@@ -1,6 +1,6 @@
 {
   "name": "ios-swift-marketplace",
-  "description": "Focused Swift and Apple platform development skills for Claude Code.",
+  "description": "Swift and Apple platform skills packaged for Claude Code.",
   "owner": {
     "name": "fal3"
   },
@@ -8,7 +8,7 @@
     {
       "name": "ios-swift-skills",
       "source": "./",
-      "description": "Twelve focused skills for modern Swift and Apple platform development"
+      "description": "Reusable Swift and Apple platform skills for coding agents"
     }
   ]
 }
