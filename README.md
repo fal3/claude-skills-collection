@@ -82,6 +82,7 @@ The repository includes `.codex-plugin/plugin.json` for Codex plugin packaging. 
 | [swift-concurrency-migration](skills/swift-concurrency-migration/README.md) | Swift 6 migration, Sendable, and actor isolation diagnostics |
 | [swiftdata-core-data-migrations](skills/swiftdata-core-data-migrations/README.md) | Schema changes, store upgrades, and persistence migrations |
 | [app-intents-widgets](skills/app-intents-widgets/README.md) | App Intents, App Shortcuts, WidgetKit, and system surfaces |
+| [iphone-duo-design](skills/iphone-duo-design/README.md) | iPhone Duo layouts, folding, vertical bars, continuity, scenes, camera, and readiness reviews |
 
 Each skill declares its own toolchain and deployment requirements. Reading a skill does not require macOS; compiling Apple framework examples and running simulators requires a compatible Apple toolchain.
 

@@ -26,13 +26,14 @@ LEGACY_NAMES = {
 
 NEW_SKILL_NAMES = %w[
   app-intents-widgets
+  iphone-duo-design
   swift-concurrency-migration
   swiftdata-core-data-migrations
 ].freeze
 
 EXPECTED_FOLDERS = (LEGACY_NAMES.keys + NEW_SKILL_NAMES).sort.freeze
 
-EXPECTED_PLUGIN_VERSION = "1.2.0"
+EXPECTED_PLUGIN_VERSION = "1.3.0"
 
 def frontmatter_lines(path, errors)
   lines = path.readlines(chomp: true)

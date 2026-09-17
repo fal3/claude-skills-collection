@@ -1,6 +1,6 @@
 {
   "name": "ios-swift-skills",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Reusable Swift and Apple platform skills for coding agents.",
   "author": {
     "name": "fal3",
@@ -20,13 +20,14 @@
     "swiftdata",
     "app-intents",
     "widgets",
-    "speech"
+    "speech",
+    "iphone-duo"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "Swift & iOS Skills",
     "shortDescription": "Practical Swift and Apple platform guidance",
-    "longDescription": "Build, migrate, test, profile, and debug Apple platform apps with focused guidance for SwiftUI, concurrency, persistence, accessibility, speech, App Intents, widgets, and more.",
+    "longDescription": "Build, migrate, test, profile, and debug Apple platform apps with focused guidance for SwiftUI, concurrency, persistence, accessibility, speech, App Intents, widgets, and iPhone Duo design.",
     "developerName": "fal3",
     "category": "Developer Tools",
     "capabilities": [

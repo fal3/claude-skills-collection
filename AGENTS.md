@@ -20,6 +20,7 @@ This repository is a skills collection focused on Swift and iOS development. Eac
 - `swift-concurrency-migration` - Structured Swift 6 concurrency migration and diagnostic workflows
 - `swiftdata-core-data-migrations` - SwiftData and Core Data schema, store, and coexistence migrations
 - `app-intents-widgets` - App Intents, App Shortcuts, WidgetKit, and system-surface integration
+- `iphone-duo-design` - Adaptive iPhone Duo layouts, controls, continuity, scenes, camera, and readiness verification
 
 ## Working conventions
 
