@@ -32,7 +32,7 @@ NEW_SKILL_NAMES = %w[
 
 EXPECTED_FOLDERS = (LEGACY_NAMES.keys + NEW_SKILL_NAMES).sort.freeze
 
-EXPECTED_PLUGIN_VERSION = "1.1.0"
+EXPECTED_PLUGIN_VERSION = "1.2.0"
 
 def frontmatter_lines(path, errors)
   lines = path.readlines(chomp: true)
@@ -94,7 +94,7 @@ errors = []
 skill_roots = SKILLS_ROOT.children.select(&:directory?).sort_by(&:basename)
 actual_folders = skill_roots.map { |root| root.basename.to_s }
 unless actual_folders == EXPECTED_FOLDERS
-  errors << "skill folders differ from the published 12-skill inventory (expected #{EXPECTED_FOLDERS.inspect}, found #{actual_folders.inspect})"
+  errors << "skill folders differ from the published #{EXPECTED_FOLDERS.length}-skill inventory (expected #{EXPECTED_FOLDERS.inspect}, found #{actual_folders.inspect})"
 end
 
 seen_names = {}

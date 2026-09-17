@@ -1,7 +1,7 @@
 {
   "name": "ios-swift-skills",
-  "version": "1.1.0",
-  "description": "Twelve focused skills for modern Swift and Apple platform development.",
+  "version": "1.2.0",
+  "description": "Reusable Swift and Apple platform skills for coding agents.",
   "author": {
     "name": "fal3",
     "url": "https://github.com/fal3"
