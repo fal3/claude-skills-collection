@@ -10,6 +10,47 @@ permissions:
   contents: read
 
 jobs:
+  packages:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Validate skill packages
+        run: ruby scripts/validate_skills.rb
+
+      - name: Check whitespace
+        run: |
+          empty_tree="$(git hash-object -t tree /dev/null)"
+          git diff --check "$empty_tree" HEAD
+
+  installer:
+    name: Installer (${{ matrix.os }}, Python ${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-26, windows-latest]
+        python: ["3.14"]
+        include:
+          - os: ubuntu-22.04
+            python: "3.9"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@v7.0.0
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Test installer
+        run: python -m unittest discover -s tests -p 'test_install_skills.py'
+
   validate:
     runs-on: macos-26
     timeout-minutes: 20
@@ -18,20 +59,12 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
 
       - name: Show toolchain
         run: |
           xcodebuild -version
           xcrun swiftc --version
 
-      - name: Validate skill packages
-        run: ruby scripts/validate_skills.rb
-
       - name: Type-check Swift examples
         run: bash scripts/typecheck_examples.sh
-
-      - name: Check whitespace
-        run: |
-          empty_tree="$(git hash-object -t tree /dev/null)"
-          git diff --check "$empty_tree" HEAD

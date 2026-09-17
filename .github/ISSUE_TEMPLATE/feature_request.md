@@ -1,12 +1,12 @@
 ---
-name: Feature Request
+name: Feature request
 about: Suggest a new skill or improvement
 title: '[FEATURE] '
 labels: enhancement
 assignees: ''
 ---
 
-## Feature Type
+## Feature type
 - [ ] New skill proposal
 - [ ] Enhancement to existing skill
 - [ ] New example for existing skill
@@ -14,19 +14,22 @@ assignees: ''
 - [ ] Tooling/automation improvement
 
 ## Description
-A clear and concise description of what you want to add or improve.
+Describe what you want to add or improve.
 
-## Use Case
-Describe the problem this feature would solve or the value it would add.
+## Use case
+What task would this help you complete?
 
-## Proposed Solution
-How would you implement this? (Optional but helpful)
+## Proposed solution
+Describe a possible approach, if you have one.
 
 ## Examples
-If proposing a new skill, provide 1-2 example scenarios where it would be useful.
+For a new skill, give example prompts that should activate it and a similar prompt that should not.
 
-## Related Skills
-Which existing skills would this relate to or complement?
+## Related skills or files
+Name the existing skill directories or file paths, if any.
 
-## Additional Context
-Add any other context, mockups, or references.
+## Environment and compatibility
+Name the coding agent or editor, host operating system, and any required framework or tool versions.
+
+## Additional context
+Add official documentation, mockups, or other references.
