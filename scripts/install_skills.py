@@ -2,17 +2,22 @@
 """Install this collection into an explicitly chosen skill directory (Python 3.9+)."""
 
 import argparse
+from contextlib import contextmanager
+import errno
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import shutil
+import stat
 import sys
 import tempfile
 
 
 SOURCE = Path(__file__).resolve().parent.parent / "skills"
 MANIFEST = ".swift-skills-install.json"
+LOCK_FILE = ".swift-skills-install.lock"
 
 
 class InstallError(Exception):
@@ -97,6 +102,54 @@ def remove_entry(path):
         shutil.rmtree(path)
 
 
+@contextmanager
+def destination_lock(destination):
+    """Keep one persistent inode; the OS releases its lock when the process exits."""
+    path = destination / LOCK_FILE
+    if present(path) and (path.is_symlink() or not path.is_file()):
+        raise InstallError(f"Install lock must be a regular file, not a symlink: {path}")
+    flags = os.O_RDWR | os.O_CREAT | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0)
+    descriptor = os.open(path, flags, 0o600)
+    acquired = False
+    try:
+        opened = os.fstat(descriptor)
+        current = path.lstat()
+        if not stat.S_ISREG(opened.st_mode) or not os.path.samestat(opened, current):
+            raise InstallError(f"Install lock changed or is not a regular file: {path}")
+        try:
+            if os.name == "nt":
+                import msvcrt
+                # Windows permits locking a byte beyond EOF, so this need not write.
+                msvcrt.locking(descriptor, msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            acquired = True
+        except OSError as error:
+            if error.errno in (errno.EACCES, errno.EAGAIN, errno.EDEADLK):
+                raise InstallError(f"Another installation is using {destination}; wait for it to finish and retry.") from error
+            raise InstallError(f"Cannot lock {destination}: {error}") from error
+        if not os.path.samestat(opened, path.lstat()):
+            raise InstallError(f"Install lock changed during acquisition: {path}")
+        yield
+    finally:
+        try:
+            if acquired:
+                if os.name == "nt":
+                    msvcrt.locking(descriptor, msvcrt.LK_UNLCK, 1)
+                else:
+                    fcntl.flock(descriptor, fcntl.LOCK_UN)
+        finally:
+            os.close(descriptor)
+
+
+def same_entry(path, identity):
+    try:
+        return os.path.samestat(path.lstat(), identity)
+    except FileNotFoundError:
+        return False
+
+
 def install(destination, mode="copy", selected=None, update=False, dry_run=False, source=SOURCE):
     source = source.resolve()
     destination = destination.expanduser().resolve()
@@ -111,8 +164,7 @@ def install(destination, mode="copy", selected=None, update=False, dry_run=False
         raise InstallError(f"Unknown skill: {', '.join(sorted(unknown))}")
     if not names:
         raise InstallError(f"No skills found in {source}")
-    manifest = load_manifest(destination)
-    plan = []
+    packages = []
     installed_names = set()
     for name in names:
         skill = available[name]
@@ -130,6 +182,21 @@ def install(destination, mode="copy", selected=None, update=False, dry_run=False
             entry["digest"] = tree_digest(skill, transform)
         else:
             entry["target"] = str(skill)
+        packages.append((skill, installed_name, entry, transform))
+    if dry_run:
+        # A read-only snapshot: do not create a destination or lock file.
+        install_packages(destination, packages, update, dry_run=True)
+    else:
+        destination.mkdir(parents=True, exist_ok=True)
+        with destination_lock(destination):
+            install_packages(destination, packages, update)
+
+
+def install_packages(destination, packages, update, dry_run=False):
+    # Every manifest read and destination mutation in a real install is locked.
+    manifest = load_manifest(destination)
+    plan = []
+    for skill, installed_name, entry, transform in packages:
         target = destination / installed_name
         previous = manifest["skills"].get(installed_name)
         exists = present(target)
@@ -149,14 +216,14 @@ def install(destination, mode="copy", selected=None, update=False, dry_run=False
     if dry_run or not plan:
         return
 
-    destination.mkdir(parents=True, exist_ok=True)
     # Stage every package before touching existing entries. A failed replacement
     # rolls earlier replacements back while the original manifest remains intact.
-    with tempfile.TemporaryDirectory(prefix=".swift-skills-stage-", dir=destination) as temporary:
-        stage = Path(temporary)
+    stage = Path(tempfile.mkdtemp(prefix=".swift-skills-stage-", dir=destination))
+    preserve_stage = False
+    try:
         for index, (skill, _, entry, transform, _) in enumerate(plan):
             staged = stage / str(index)
-            if mode == "symlink":
+            if entry["mode"] == "symlink":
                 try:
                     staged.symlink_to(skill, target_is_directory=True)
                 except OSError as error:
@@ -170,25 +237,48 @@ def install(destination, mode="copy", selected=None, update=False, dry_run=False
                 if tree_digest(staged) != entry["digest"]:
                     raise InstallError(f"Source changed while copying {skill}; retry the installation.")
         replaced = []
+        manifest_identity = None
         try:
             for index, (_, target, entry, _, existed) in enumerate(plan):
                 if present(target) != existed or (existed and not matches(target, manifest["skills"][target.name])):
                     raise InstallError(f"Destination changed during installation: {target}")
                 backup = stage / f"backup-{index}"
+                staged = stage / str(index)
+                # Record before either rename so cancellation after a successful
+                # rename is recoverable. Identity proves which entry we own.
+                replaced.append((target, backup, staged.lstat()))
                 if existed:
                     target.rename(backup)
-                replaced.append((target, backup))
-                (stage / str(index)).rename(target)
+                staged.rename(target)
                 manifest["skills"][target.name] = entry
             staged_manifest = stage / "manifest.json"
             staged_manifest.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+            manifest_identity = staged_manifest.lstat()
             staged_manifest.replace(destination / MANIFEST)
         except BaseException:
-            for target, backup in reversed(replaced):
-                remove_entry(target)
-                if present(backup):
-                    backup.rename(target)
+            # Cancellation after the atomic manifest replacement has committed
+            # the new packages; rolling them back would invalidate that manifest.
+            if manifest_identity is not None and same_entry(destination / MANIFEST, manifest_identity):
+                raise
+            preserve_stage = True
+            failures = []
+            for target, backup, identity in reversed(replaced):
+                try:
+                    if same_entry(target, identity):
+                        remove_entry(target)
+                    if present(backup):
+                        if present(target):
+                            raise InstallError(f"A different entry now occupies {target}")
+                        backup.rename(target)
+                except (OSError, InstallError) as error:
+                    failures.append(str(error))
+            if failures:
+                raise InstallError(f"Rollback could not restore every package. Backups remain in {stage}. " + "; ".join(failures))
+            preserve_stage = False
             raise
+    finally:
+        if not preserve_stage:
+            shutil.rmtree(stage)
     print(f"Installed {len(plan)} skill(s) in {destination}")
 
 
