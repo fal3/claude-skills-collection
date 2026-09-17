@@ -38,6 +38,8 @@ jobs:
         include:
           - os: ubuntu-22.04
             python: "3.9"
+          - os: windows-latest
+            python: "3.9"
 
     steps:
       - name: Check out repository
