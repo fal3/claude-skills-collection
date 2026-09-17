@@ -1,10 +1,10 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Read [AGENTS.md](AGENTS.md) for the shared repository rules before making changes. This file is the Claude Code entry point and carries the same skill inventory.
 
 ## Repository Overview
 
-This is a reusable skills collection for Claude Code and Codex, focused on Swift and iOS development. It contains curated skills that provide specialized expertise across different iOS/Swift domains. Each skill is a self-contained directory with structured documentation and examples or reference material.
+This is a reusable skills collection for coding agents, focused on Swift and iOS development. It contains curated skills that provide specialized expertise across different iOS/Swift domains. Each skill is a self-contained directory with structured documentation and examples or reference material.
 
 ## Repository Structure
 
@@ -15,7 +15,7 @@ skills/<skill-name>/
 ├── SKILL.md               # Skill definition with frontmatter and instructions
 ├── README.md              # User-facing documentation
 ├── agents/
-│   └── openai.yaml        # Optional portable UI metadata
+│   └── openai.yaml        # Optional OpenAI host UI metadata
 ├── examples/              # Practical code and prompts (when appropriate)
 │   ├── prompts.md         # Positive and negative activation fixtures
 │   └── *.swift            # Working code examples
@@ -66,7 +66,7 @@ When adding a new skill, follow these requirements:
    - Be runnable/compilable where applicable
    - Include explanatory comments where helpful
    - Use modern Swift features (async/await when appropriate)
-6. **Portable Metadata**: Add `agents/openai.yaml` with a concise display name, short description, and a default prompt that names `$<skill-name>`
+6. **Host Metadata**: Add `agents/openai.yaml` with a concise display name, short description, and a default prompt that names `$<skill-name>`
 7. **Progressive Disclosure**: Keep `SKILL.md` under 500 lines and link directly to focused examples or references
 
 New skill directories should use lowercase kebab-case. Existing published directories should not be renamed without a compatibility and migration plan.
@@ -115,3 +115,7 @@ The plugin manifests carry the collection's semantic version. Individual portabl
 
 ### Repository Synchronization
 When adding, removing, or renaming a skill, update the inventories or structural guidance in `AGENTS.md`, `CLAUDE.md`, `CODEX.md`, and `README.md`. Update plugin metadata when the change affects the plugin description or release version.
+
+## Host independence
+
+Keep core skill procedures usable through ordinary file reads and shell tools. Put host-specific installation and invocation details in [the compatibility guide](docs/agent-compatibility.md). Use the installer for copy or symlink setup; never merge skill trees into existing unrelated directories.

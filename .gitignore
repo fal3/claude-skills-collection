@@ -22,3 +22,7 @@ yarn-error.log*
 dist/
 build/
 *.log
+
+# Python tooling
+__pycache__/
+*.py[cod]
