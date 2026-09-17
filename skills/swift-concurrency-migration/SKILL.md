@@ -1,7 +1,6 @@
 ---
 name: swift-concurrency-migration
-description: >-
-  Plan, implement, debug, and verify migrations from callback-, delegate-, Dispatch-, or permissive-concurrency Swift code to Swift 6 strict concurrency, including target-specific build settings, approachable concurrency, default actor isolation, @concurrent work, actors, Sendable boundaries, cancellation, and structured tasks. Use for Swift 6 compiler diagnostics, concurrency adoption plans, legacy async bridges, or migration-focused tests in Apple-platform apps and Swift packages. Do not use for general Swift syntax, performance work without a concurrency finding, framework-specific threading rules without a Swift migration, or requests that merely contain an already-correct async function.
+description: Plan, implement, debug, and verify migrations from callback-, delegate-, Dispatch-, or permissive-concurrency Swift code to Swift 6 strict concurrency, including target-specific build settings, approachable concurrency, default actor isolation, @concurrent work, actors, Sendable boundaries, cancellation, and structured tasks. Use for Swift 6 compiler diagnostics, concurrency adoption plans, legacy async bridges, or migration-focused tests in Apple-platform apps and Swift packages. Do not use for general Swift syntax, performance work without a concurrency finding, framework-specific threading rules without a Swift migration, or requests that merely contain an already-correct async function.
 ---
 
 # Swift Concurrency Migration

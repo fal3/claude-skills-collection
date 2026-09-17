@@ -1,7 +1,6 @@
 ---
 name: app-intents-widgets
-description: >-
-  Design, implement, debug, and verify stable App Intents and WidgetKit integrations, including AppIntent, AppEntity, AppEnum, entity queries, AppShortcutsProvider, dependency injection, shared extension data, widget timelines, relevance, controls, Live Activity selection, deep links, handoff, confirmation, and privacy. Use when exposing app actions to Siri or Shortcuts, building configurable or interactive widgets, sharing state with extensions, or choosing the correct system surface for an action. Do not use for ordinary in-app buttons, generic SwiftUI layout, background scheduling without a widget or intent, SiriKit-only legacy work with no migration request, or Live Activity push-server implementation as the sole task.
+description: Design, implement, debug, and verify stable App Intents and WidgetKit integrations, including AppIntent, AppEntity, AppEnum, entity queries, AppShortcutsProvider, dependency injection, shared extension data, widget timelines, relevance, controls, Live Activity selection, deep links, handoff, confirmation, and privacy. Use when exposing app actions to Siri or Shortcuts, building configurable or interactive widgets, sharing state with extensions, or choosing the correct system surface for an action. Do not use for ordinary in-app buttons, generic SwiftUI layout, background scheduling without a widget or intent, SiriKit-only legacy work with no migration request, or Live Activity push-server implementation as the sole task.
 ---
 
 # App Intents and Widgets
