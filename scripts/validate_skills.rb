@@ -242,7 +242,8 @@ if marketplace
   errors << ".claude-plugin/marketplace.json must keep ios-swift-skills source at ./" if plugin_entry && plugin_entry["source"] != "./"
 end
 
-markdown_paths = [ROOT.join("README.md"), ROOT.join("CONTRIBUTING.md")] +
+markdown_paths = %w[README.md CONTRIBUTING.md AGENTS.md CLAUDE.md CODEX.md].map { |path| ROOT.join(path) } +
+                 ROOT.glob("docs/*.md") +
                  skill_roots.flat_map { |root| root.glob("**/*.md") }
 markdown_paths.uniq.each { |path| validate_markdown(path, errors) }
 
