@@ -1,5 +1,5 @@
 ---
-name: iOS Animation Graphics Skill
+name: ios-animation-graphics-skill
 description: Design, implement, debug, and review accessible Apple-platform animation and graphics with SwiftUI animation, Canvas, TimelineView, matched geometry, phase/keyframe animators, Core Animation, and Lottie. Use for motion design, custom drawing, transitions, particles, animated symbols, UIKit/AppKit bridging, Reduce Motion, and animation performance. Prefer native SwiftUI for app UI; use Core Animation or Lottie only when their capabilities are needed. Do not use this skill for SpriteKit/Metal game engines, video rendering, or image editing unless animation integration is the specific task.
 ---
 

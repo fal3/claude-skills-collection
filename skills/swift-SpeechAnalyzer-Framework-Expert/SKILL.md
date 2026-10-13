@@ -1,5 +1,5 @@
 ---
-name: SpeechAnalyzer Framework Expert
+name: swift-speechanalyzer-framework-expert
 description: Implement, migrate, debug, and review on-device transcription with Apple SpeechAnalyzer, SpeechTranscriber, DictationTranscriber, AssetInventory, AnalyzerInput, live microphone audio, and audio-file analysis on iOS 26, macOS 26, visionOS 26, and tvOS 26 where supported. Use for SpeechAnalyzer setup, locale assets and reservations, volatile/final results, AttributedString transcripts, audio conversion, permissions, lifecycle, and migration from SFSpeechRecognizer or Whisper-based solutions. Do not invent beta or later-SDK APIs, assume locale/device support, iterate Foundation Progress as an AsyncSequence, or use SpeechAnalyzer on watchOS.
 ---
 

@@ -21,6 +21,7 @@ This repository is a skills collection focused on Swift and iOS development. Eac
 - `swiftdata-core-data-migrations` - SwiftData and Core Data schema, store, and coexistence migrations
 - `app-intents-widgets` - App Intents, App Shortcuts, WidgetKit, and system-surface integration
 - `iphone-duo-design` - Adaptive iPhone Duo layouts, controls, continuity, scenes, camera, and readiness verification
+- `apple-evaluations` - Apple Evaluations framework datasets, metrics, model judges, tool trajectories, and Swift Testing regression gates for generative AI
 
 ## Working conventions
 
@@ -52,4 +53,4 @@ When adding a new skill, follow the same pattern used by existing skills:
 - Review Swift snippets against the minimum versions declared by that skill; use a temporary project when compilation matters and no shared build project exists.
 - Check repository-level skill inventories whenever the set of skills changes.
 - Run `python3 -m unittest discover -s tests -p 'test_*.py'`, `ruby scripts/validate_skills.rb`, and `git diff --check` before handing off changes. Run `bash scripts/typecheck_examples.sh` when Swift examples change, using the declared Apple toolchain.
-- Keep installation code compatible with Python 3.9 or later and test path, conflict, update, and rollback behavior. Preserve existing published identifiers; normalize only installed copies when a host requires strict names.
+- Keep installation code compatible with Python 3.9 or later and test path, conflict, update, and rollback behavior. Skill `name` fields must be lowercase kebab-case and equal the folder name lowercased.

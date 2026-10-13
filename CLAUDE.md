@@ -38,6 +38,7 @@ skills/<skill-name>/
 11. **swiftdata-core-data-migrations** - Safe SwiftData and Core Data schema/store migrations
 12. **app-intents-widgets** - App Intents, App Shortcuts, WidgetKit, and system surfaces
 13. **iphone-duo-design** - Adaptive iPhone Duo design, state continuity, scenes, camera, and readiness verification
+14. **apple-evaluations** - Apple Evaluations framework datasets, metrics, model judges, tool trajectories, and Swift Testing regression gates for generative AI
 
 ## Working with Skills
 
@@ -46,7 +47,7 @@ skills/<skill-name>/
 Each `SKILL.md` follows this frontmatter format:
 ```yaml
 ---
-name: <Skill Name>
+name: <skill-name>
 description: <What the skill does, when to use it, and when not to use it>
 ---
 ```

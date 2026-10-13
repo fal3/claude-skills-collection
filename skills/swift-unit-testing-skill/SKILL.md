@@ -1,5 +1,5 @@
 ---
-name: Swift Unit Testing Skill
+name: swift-unit-testing-skill
 description: "Design, write, migrate, and review Swift unit and integration tests using Swift Testing by default, with XCTest retained for UI automation, performance metrics, Objective-C interoperability, and legacy suites. Use for @Test, #expect, #require, parameterized tests, async tests, dependency injection, mocks/fakes, test plans, XCTest, XCUITest, TDD, flaky tests, and test architecture. Do not use UI-test polling or XCTest subclasses for ordinary new Swift unit tests, and do not introduce third-party snapshot frameworks unless the user requests one."
 ---
 

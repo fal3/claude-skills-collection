@@ -4,7 +4,28 @@ Reusable guidance for Swift and Apple app development, written for coding agents
 
 ## Install
 
-Clone the collection outside your app repository, then choose the skill directory your agent reads. The installer needs Python 3.9 or later and no third-party packages.
+```bash
+npx skills add fal3/claude-skills-collection
+```
+
+That's it. The [skills CLI](https://github.com/vercel-labs/skills) lets you pick skills and agents (Claude Code, Codex, Cursor, Gemini CLI, GitHub Copilot, OpenCode, and more), then installs them.
+
+```bash
+# Everything, globally, no prompts
+npx skills add fal3/claude-skills-collection --all -g -y
+
+# One skill for Claude Code
+npx skills add fal3/claude-skills-collection --skill swiftui-programming-skill -a claude-code
+
+# See what's available
+npx skills add fal3/claude-skills-collection --list
+```
+
+Update later with `npx skills update`.
+
+### Without Node
+
+The Python installer needs Python 3.9+ and no packages:
 
 ```bash
 git clone https://github.com/fal3/claude-skills-collection.git
@@ -12,48 +33,7 @@ cd claude-skills-collection
 python3 scripts/install_skills.py --dest "$HOME/.agents/skills"
 ```
 
-On Windows PowerShell, use a copy installation:
-
-```powershell
-git clone https://github.com/fal3/claude-skills-collection.git
-Set-Location claude-skills-collection
-py -3 scripts/install_skills.py --dest "$HOME/.agents/skills"
-```
-
-The default copies the whole skill package and normalizes legacy names in the installed copy for agents with strict naming rules. It preserves the repository's published names and plugin identifiers. Existing unrelated files are never adopted or overwritten. A repeated install of unchanged content does nothing.
-
-These are documented discovery paths, not a claim that every host has been tested with this collection. The [compatibility guide](docs/agent-compatibility.md) links to each host's documentation and explains naming, invocation, and cloud limitations.
-
-| Coding agent | Project destination | Personal destination |
-|---|---|---|
-| Codex | `/path/to/app/.agents/skills` | `~/.agents/skills` |
-| Claude Code | `/path/to/app/.claude/skills` | `~/.claude/skills` |
-| Cursor | `/path/to/app/.cursor/skills` | `~/.cursor/skills` |
-| GitHub Copilot | `/path/to/app/.github/skills` | `~/.copilot/skills` |
-| Gemini CLI | `/path/to/app/.gemini/skills` | `~/.gemini/skills` |
-| OpenCode | `/path/to/app/.opencode/skills` | `~/.config/opencode/skills` |
-| Other agents | Any readable directory | Ask the agent to read the skill explicitly |
-
-For a project installation or a single skill:
-
-```bash
-python3 scripts/install_skills.py \
-  --dest /path/to/app/.agents/skills \
-  --skill swiftui-programming-skill
-```
-
-Repeat `--skill` to select several source folders. Omit it to install the collection. Use `--dry-run` to check the plan without writing files.
-
-## Update an installation
-
-```bash
-git pull --ff-only
-python3 scripts/install_skills.py --dest "$HOME/.agents/skills" --update
-```
-
-`--update` replaces only unchanged entries recorded in `.swift-skills-install.json`. Replacement removes files that the source package no longer includes. If you edited an installed package, the installer stops so you can preserve those edits before replacing it. It leaves unrelated skills alone and does not remove skills that disappear from the collection. Keep the manifest with the installation so future runs can recognize managed entries.
-
-For local development, `--mode symlink` links to the checkout and reflects edits immediately. It preserves legacy metadata, so use it only with hosts that accept those names. Symlinks also require operating system permission and a checkout that stays at the same path. Copy mode is the portable default, including on Windows. See [installation details](docs/agent-compatibility.md#copy-and-symlink-installations).
+Add `--skill <folder>` to pick skills, `--update` after a `git pull`, or `--dry-run` to preview. See the [compatibility guide](docs/agent-compatibility.md) for per-agent paths, copy vs. symlink, and Windows notes.
 
 ### Claude Code plugin
 
@@ -83,6 +63,7 @@ The repository includes `.codex-plugin/plugin.json` for Codex plugin packaging. 
 | [swiftdata-core-data-migrations](skills/swiftdata-core-data-migrations/README.md) | Schema changes, store upgrades, and persistence migrations |
 | [app-intents-widgets](skills/app-intents-widgets/README.md) | App Intents, App Shortcuts, WidgetKit, and system surfaces |
 | [iphone-duo-design](skills/iphone-duo-design/README.md) | iPhone Duo layouts, folding, vertical bars, continuity, scenes, camera, and readiness reviews |
+| [apple-evaluations](skills/apple-evaluations/README.md) | Generative AI regression testing with Apple's Evaluations framework, datasets, metrics, model judges, and tool trajectories |
 
 Each skill declares its own toolchain and deployment requirements. Reading a skill does not require macOS; compiling Apple framework examples and running simulators requires a compatible Apple toolchain.
 

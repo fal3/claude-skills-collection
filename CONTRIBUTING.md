@@ -18,7 +18,7 @@ This collection provides Swift and Apple development guidance for coding agents.
 
 7. **Compatibility**: Do not rename a published skill directory without documenting a migration path for existing installations and references.
 
-8. **Host independence**: Keep core procedures usable by any agent with file access. Put host-specific setup in [the compatibility guide](docs/agent-compatibility.md). Preserve source identifiers and use the installer to normalize copied packages for strict hosts.
+8. **Host independence**: Keep core procedures usable by any agent with file access. Put host-specific setup in [the compatibility guide](docs/agent-compatibility.md). Keep each skill's `name` equal to its folder name, lowercased.
 
 9. **Issues**: Report bugs or suggest features via GitHub issues.
 

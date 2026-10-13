@@ -1,5 +1,5 @@
 ---
-name: Cross-Platform App Development Skill
+name: cross-platform-app-development-skill
 description: Use when one Swift/SwiftUI product intentionally targets two or more of iOS, iPadOS, Mac Catalyst, macOS, watchOS, tvOS, or visionOS and needs shared-domain design, adaptive UI, capability boundaries, navigation, input, scenes, storage, or conditional compilation. Do not use for a single-platform feature or for non-Apple cross-platform frameworks.
 ---
 

@@ -1,6 +1,6 @@
 {
   "name": "ios-swift-skills",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Reusable Swift and Apple platform skills for coding agents.",
   "author": {
     "name": "fal3",
@@ -21,7 +21,9 @@
     "app-intents",
     "widgets",
     "speech",
-    "iphone-duo"
+    "iphone-duo",
+    "evaluations",
+    "generative-ai"
   ],
   "license": "MIT"
 }
