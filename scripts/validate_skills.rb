@@ -193,7 +193,7 @@ skill_roots.each do |skill_root|
     errors << "skills/#{folder}/agents/openai.yaml is missing #{field}" unless value.is_a?(String) && !value.strip.empty?
   end
   default_prompt = interface["default_prompt"].to_s
-  errors << "skills/#{folder}/agents/openai.yaml default_prompt must name $#{folder}" unless default_prompt.match?(/\$#{Regexp.escape(folder)}\b/)
+  errors << "skills/#{folder}/agents/openai.yaml default_prompt must name $#{expected_name}" unless default_prompt.match?(/\$#{Regexp.escape(expected_name)}\b/)
 end
 
 %w[AGENTS.md CLAUDE.md CODEX.md README.md].each do |inventory|
