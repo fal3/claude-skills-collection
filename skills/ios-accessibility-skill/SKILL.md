@@ -1,5 +1,5 @@
 ---
-name: iOS Accessibility Skill
+name: ios-accessibility-skill
 description: Use when iOS or iPadOS accessibility design, implementation, review, or testing involves VoiceOver, Voice Control, Switch Control, Full Keyboard Access, Dynamic Type, contrast, motion, focus, media alternatives, or Assistive Access. Do not use for generic visual styling or platform-neutral UI work with no accessibility requirement.
 ---
 

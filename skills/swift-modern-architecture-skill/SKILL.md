@@ -1,5 +1,5 @@
 ---
-name: Swift Modern Architecture Skill
+name: swift-modern-architecture-skill
 description: Use when designing new or intentionally modernized SwiftUI app architecture targeting Swift 6 with strict concurrency and iOS/iPadOS 18 or macOS 15, especially Observation ownership, dependency boundaries, SwiftData, structured concurrency, navigation state, and test seams. Do not use for arbitrary Swift questions, older deployment targets, UIKit-only work, or migrations where the existing Core Data, Combine, Dispatch, or XCTest design is not being reconsidered.
 ---
 

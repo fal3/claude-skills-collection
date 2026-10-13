@@ -1,5 +1,5 @@
 ---
-name: SwiftUI Programming Skill
+name: swiftui-programming-skill
 description: Use when work involves SwiftUI view composition, state and Observation ownership, navigation, adaptive layout, toolbars, forms, SF Symbols, accessibility, previews, or SwiftUI-specific performance. Do not use for UIKit/AppKit-only work, general Swift language questions, or architecture and performance work that does not involve SwiftUI.
 ---
 

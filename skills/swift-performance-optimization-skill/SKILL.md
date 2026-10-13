@@ -1,5 +1,5 @@
 ---
-name: Swift Performance Optimization Skill
+name: swift-performance-optimization-skill
 description: Use when investigating measured Swift or Apple-platform regressions in CPU, memory, launch, scrolling, animation hitches, image processing, energy, networking, or concurrency, or when designing performance tests and Instruments experiments. Do not use for speculative micro-optimization, ordinary refactoring, or a functional bug without performance evidence.
 ---
 

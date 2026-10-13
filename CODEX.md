@@ -23,6 +23,7 @@ Read [AGENTS.md](AGENTS.md) for the shared repository rules before making change
 - `swiftdata-core-data-migrations`
 - `app-intents-widgets`
 - `iphone-duo-design`
+- `apple-evaluations`
 
 ## Editing Standards
 

@@ -1,5 +1,5 @@
 ---
-name: Memory Leak Diagnosis Skill
+name: memory-leak-diagnosis-skill
 description: Diagnose, explain, and fix Swift and Apple-platform memory leaks, unexpected object retention, deinit failures, heap growth, retain cycles, runaway caches, task and AsyncSequence lifetimes, timer/delegate/closure ownership, jetsam, and ARC issues using Xcode Memory Graph and Instruments Allocations, Leaks, and VM tools. Use when objects do not deallocate, memory rises across repeated workflows, or weak/unowned and capture-list choices are unclear. Do not enable Zombies for leak measurement, call every temporary retention a leak, or use unowned without a proven lifetime invariant.
 ---
 

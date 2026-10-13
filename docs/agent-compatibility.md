@@ -25,7 +25,7 @@ Copy mode is the default and needs Python 3.9 or later. It copies every supporti
 - `SKILL.md`'s `name` matches that installed folder.
 - `agents/openai.yaml`'s `$skill-name` prompt uses the installed folder name.
 
-Older published skills use display names with spaces and capitals in frontmatter. Cursor and OpenCode document stricter identifier rules, so copying raw source folders may fail discovery there. The installer normalizes those identifiers without changing the repository or breaking existing plugin installations. Relative paths inside each package stay the same.
+Every skill's frontmatter `name` is lowercase kebab-case and equals its folder name lowercased, so strict hosts such as Cursor and OpenCode accept the source folders directly, and `npx skills add fal3/claude-skills-collection --skill <name>` works. Releases before 1.4.0 used display names such as "SwiftUI Programming Skill"; the installer still normalizes any such names it finds. Relative paths inside each package stay the same.
 
 For example, `swiftui-programming-skill` keeps its folder name while its installed frontmatter name becomes `swiftui-programming-skill`. The source folder `swift-SpeechAnalyzer-Framework-Expert` installs as `swift-speechanalyzer-framework-expert`, with a matching frontmatter name and default prompt. Select it using the published source spelling:
 

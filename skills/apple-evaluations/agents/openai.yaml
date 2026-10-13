@@ -1,0 +1,4 @@
+interface:
+  display_name: "Apple Evaluations"
+  short_description: "Measure AI feature quality with Apple Evaluations"
+  default_prompt: "Use $apple-evaluations to build a measurable regression suite for this app's intelligence features."

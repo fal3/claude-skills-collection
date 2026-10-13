@@ -10,30 +10,28 @@ ROOT = Pathname.new(__dir__).parent.expand_path
 SKILLS_ROOT = ROOT.join("skills")
 MAX_SKILL_LINES = 500
 
-# These names were already published before the portable metadata migration.
-# Keep them stable until a separately documented compatibility release changes them.
-LEGACY_NAMES = {
-  "cross-platform-app-development-skill" => "Cross-Platform App Development Skill",
-  "ios-accessibility-skill" => "iOS Accessibility Skill",
-  "ios-animation-graphics-skill" => "iOS Animation Graphics Skill",
-  "memory-leak-diagnosis-skill" => "Memory Leak Diagnosis Skill",
-  "swift-SpeechAnalyzer-Framework-Expert" => "SpeechAnalyzer Framework Expert",
-  "swift-modern-architecture-skill" => "Swift Modern Architecture Skill",
-  "swift-performance-optimization-skill" => "Swift Performance Optimization Skill",
-  "swift-unit-testing-skill" => "Swift Unit Testing Skill",
-  "swiftui-programming-skill" => "SwiftUI Programming Skill"
-}.freeze
-
-NEW_SKILL_NAMES = %w[
+# Skill names are lowercase kebab-case and match the folder name (lowercased),
+# so `npx skills add fal3/claude-skills-collection --skill <folder>` works.
+SKILL_FOLDERS = %w[
   app-intents-widgets
+  apple-evaluations
+  cross-platform-app-development-skill
+  ios-accessibility-skill
+  ios-animation-graphics-skill
   iphone-duo-design
+  memory-leak-diagnosis-skill
+  swift-SpeechAnalyzer-Framework-Expert
   swift-concurrency-migration
+  swift-modern-architecture-skill
+  swift-performance-optimization-skill
+  swift-unit-testing-skill
   swiftdata-core-data-migrations
+  swiftui-programming-skill
 ].freeze
 
-EXPECTED_FOLDERS = (LEGACY_NAMES.keys + NEW_SKILL_NAMES).sort.freeze
+EXPECTED_FOLDERS = SKILL_FOLDERS.sort.freeze
 
-EXPECTED_PLUGIN_VERSION = "1.3.0"
+EXPECTED_PLUGIN_VERSION = "1.4.0"
 
 def frontmatter_lines(path, errors)
   lines = path.readlines(chomp: true)
@@ -134,8 +132,8 @@ skill_roots.each do |skill_root|
 
   name = metadata["name"]
   description = metadata["description"]
-  expected_name = LEGACY_NAMES.fetch(folder, folder)
-  errors << "skills/#{folder} changed published name #{expected_name.inspect} to #{name.inspect}" unless name == expected_name
+  expected_name = folder.downcase
+  errors << "skills/#{folder} name #{name.inspect} must be #{expected_name.inspect}" unless name == expected_name
   if name && seen_names.key?(name)
     errors << "duplicate skill name #{name.inspect} in #{seen_names[name]} and skills/#{folder}"
   elsif name
@@ -195,7 +193,7 @@ skill_roots.each do |skill_root|
     errors << "skills/#{folder}/agents/openai.yaml is missing #{field}" unless value.is_a?(String) && !value.strip.empty?
   end
   default_prompt = interface["default_prompt"].to_s
-  errors << "skills/#{folder}/agents/openai.yaml default_prompt must name $#{folder}" unless default_prompt.match?(/\$#{Regexp.escape(folder)}\b/)
+  errors << "skills/#{folder}/agents/openai.yaml default_prompt must name $#{expected_name}" unless default_prompt.match?(/\$#{Regexp.escape(expected_name)}\b/)
 end
 
 %w[AGENTS.md CLAUDE.md CODEX.md README.md].each do |inventory|

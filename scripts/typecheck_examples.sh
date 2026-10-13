@@ -7,6 +7,7 @@ repository_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 failure_count=0
 checked_count=0
 parsed_count=0
+unavailable_count=0
 
 typecheck_file() {
   local file="$1"
@@ -90,6 +91,29 @@ parse_external_example() {
   fi
 }
 
+check_evaluations_example() {
+  local file="$1"
+  local platform_path
+
+  platform_path="$(xcrun --sdk macosx --show-sdk-platform-path 2>/dev/null)"
+  if [[ -d "$platform_path/Developer/Library/Frameworks/Evaluations.framework" ]]; then
+    typecheck_file "$file" macosx arm64-apple-macosx27.0
+    typecheck_file "$file" iphonesimulator arm64-apple-ios27.0-simulator
+    return
+  fi
+
+  echo "SYNTAX ONLY ${file#"$repository_root"/} [Evaluations unavailable; Xcode 27 required]"
+  if xcrun swiftc -frontend -parse -swift-version 6 "$file"; then
+    unavailable_count=$((unavailable_count + 1))
+  else
+    failure_count=$((failure_count + 1))
+  fi
+  if [[ "${REQUIRE_EVALUATIONS:-0}" == "1" ]]; then
+    echo "ERROR Evaluations typechecking is required but its SDK framework is unavailable."
+    failure_count=$((failure_count + 1))
+  fi
+}
+
 while IFS= read -r file; do
   relative="${file#"$repository_root"/}"
 
@@ -99,6 +123,9 @@ while IFS= read -r file; do
   fi
 
   case "$relative" in
+    skills/apple-evaluations/examples/*)
+      check_evaluations_example "$file"
+      ;;
     skills/app-intents-widgets/examples/AppIntentsExample.swift)
       typecheck_file "$file" iphonesimulator arm64-apple-ios16.0-simulator
       typecheck_file "$file" macosx arm64-apple-macosx13.0
@@ -172,6 +199,9 @@ while IFS= read -r file; do
 done < <(find "$repository_root/skills" -path '*/examples/*.swift' -type f | LC_ALL=C sort)
 
 echo "Validated $checked_count compiler target(s); parsed $parsed_count external-dependency example(s)."
+if (( unavailable_count > 0 )); then
+  echo "$unavailable_count Evaluations example(s) syntax-checked only; framework typechecking and execution remain unverified."
+fi
 if (( failure_count > 0 )); then
   echo "$failure_count example validation failure(s)."
   exit 1
